@@ -24,7 +24,7 @@ let route = "leads";
 const SETTINGS_KEY = "hotelcrm_settings_v1";
 
 // App Version
-const APP_VERSION = "1.0.2";
+let APP_VERSION = "0.0.0"; // will be loaded from version.json
 
 
 // Default backup endpoint (auto-filled if not saved yet)
@@ -76,6 +76,7 @@ const payload = {
   app: "hotelcrm",
   ts: new Date().toISOString(),
   data: store.get(),
+  settings: loadSettings_(), // ✅ include settings
   images: {
     company_logo: images.company_logo || "",
     company_bg: images.company_bg || "",
@@ -262,6 +263,7 @@ try{
 
  const dataRaw = payload.data || {};
 const images = payload.images || {};
+const settingsRaw = payload.settings || {};
 
 // Confirm overwrite
 const ok = confirm("This will overwrite your current local data with the backup. Continue?");
@@ -269,6 +271,25 @@ if(!ok) return;
 
 // ✅ Save core data (forced + normalized)
 const saved = forceSaveDb_(dataRaw);
+
+// ✅ Restore settings (merge, don't lose endpoint/theme)
+try{
+  const cur = loadSettings_();
+  const incoming = (settingsRaw && typeof settingsRaw === "object") ? settingsRaw : {};
+  const merged = {
+    ...cur,
+    ...incoming
+  };
+
+  // Ensure endpoint is never blank
+  if(!merged.backup_endpoint) merged.backup_endpoint = cur.backup_endpoint || "";
+
+  saveSettings_(merged);
+  applyTheme_();
+}catch(e){
+  console.warn("Settings restore skipped/failed", e);
+}
+	
 console.log("✅ Restored counts:", {
   leads: saved.leads.length,
   followups: saved.followups.length,
@@ -393,13 +414,46 @@ document.getElementById("btn_reset_db").addEventListener("click", ()=>{
 
 
 });
+
+
+
+// app version checks
+
+async function loadAppVersion_(){
+  try{
+    const res = await fetch(`./version.json?ts=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return APP_VERSION;
+    const j = await res.json();
+    const v = String(j.version || "").trim();
+    if(v) APP_VERSION = v;
+// If we are now on the latest version, clear dismissal
+const dis = String(localStorage.getItem("hotelcrm_dismissed_update") || "");
+if(dis && dis === APP_VERSION){
+  localStorage.removeItem("hotelcrm_dismissed_update");
+}
+	  
+  }catch(e){
+    // ignore
+  }
+  return APP_VERSION;
+}
+
+
+
 async function checkForUpdate_(){
   try{
     const res = await fetch(`./version.json?ts=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return;
     const j = await res.json();
     const latest = String(j.version || "").trim();
-    if(!latest || latest === APP_VERSION) return;
+    if(!latest) return;
+
+// If latest equals current, no banner
+if(latest === APP_VERSION) return;
+
+// If user already dismissed this exact latest version, don't show again
+const dismissed = String(localStorage.getItem("hotelcrm_dismissed_update") || "");
+if(dismissed === latest) return;
 
     // show banner
     let bar = document.getElementById("update_bar");
@@ -424,7 +478,12 @@ async function checkForUpdate_(){
 
       bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
         // one tap update for your friend
-        window.location.reload();
+        localStorage.setItem("hotelcrm_dismissed_update", latest);
+
+// Force reload with cache-bust query so iPhone actually loads new files
+const u = new URL(window.location.href);
+u.searchParams.set("r", Date.now().toString());
+window.location.replace(u.toString());
       });
     }
   }catch(e){
@@ -433,6 +492,7 @@ async function checkForUpdate_(){
 }
 async function init_(){
   applyTheme_();
+	await loadAppVersion_();
 await checkForUpdate_();
   // Always render header first
   console.log("✅ init_() running, now calling renderHeader()");
@@ -462,5 +522,6 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
