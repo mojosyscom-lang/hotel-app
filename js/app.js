@@ -22,6 +22,11 @@ const fab = document.getElementById("fab_add");
 let route = "leads";
 
 const SETTINGS_KEY = "hotelcrm_settings_v1";
+
+// App Version
+const APP_VERSION = "1.0.2";
+
+
 // Default backup endpoint (auto-filled if not saved yet)
 const DEFAULT_BACKUP_ENDPOINT =
   "https://script.google.com/macros/s/AKfycbyiLA0xYQ3i8C_nZcU0KLkTFFsz9GVdzQAf-4gZBE3s7bQTDZ7uneFOx2E2e_G832b8LQ/exec?token=hotel-app-superadmin-vishal";
@@ -137,6 +142,43 @@ fab.addEventListener("click", ()=>{
 
 
 
+function normalizeDb_(db){
+  // accept older formats and ensure required keys exist
+  const out = (db && typeof db === "object") ? db : {};
+
+  // If someone backed up { data: { data: {...} } } by mistake
+  const maybeNested = out.data && out.data.leads !== undefined ? out.data : null;
+  const fixed = maybeNested ? maybeNested : out;
+
+  return {
+    leads: Array.isArray(fixed.leads) ? fixed.leads : [],
+    followups: Array.isArray(fixed.followups) ? fixed.followups : [],
+    contracts: Array.isArray(fixed.contracts) ? fixed.contracts : [],
+    terms: (fixed.terms && typeof fixed.terms === "object")
+      ? fixed.terms
+      : { text: String(fixed.terms || "") },
+    company: (fixed.company && typeof fixed.company === "object")
+      ? fixed.company
+      : {}
+  };
+}
+
+function forceSaveDb_(db){
+  // make sure the EXACT LocalStorage key is updated
+  const clean = normalizeDb_(db);
+
+  try{
+    store.set(clean);
+  }catch(e){
+    // fallback if store.set ever fails
+    localStorage.setItem("hotelcrm_v1", JSON.stringify(clean));
+  }
+
+  return clean;
+}
+
+
+
 function fmtLocalDT_(iso){
   if(!iso) return "-";
   const d = new Date(iso);
@@ -218,15 +260,21 @@ try{
     return;
   }
 
-  const data = payload.data || {};
-  const images = payload.images || {};
+ const dataRaw = payload.data || {};
+const images = payload.images || {};
 
-  // Confirm overwrite
-  const ok = confirm("This will overwrite your current local data with the backup. Continue?");
-  if(!ok) return;
+// Confirm overwrite
+const ok = confirm("This will overwrite your current local data with the backup. Continue?");
+if(!ok) return;
 
-  // Save core data
-  store.set(data);
+// ✅ Save core data (forced + normalized)
+const saved = forceSaveDb_(dataRaw);
+console.log("✅ Restored counts:", {
+  leads: saved.leads.length,
+  followups: saved.followups.length,
+  contracts: saved.contracts.length,
+  terms_len: String(saved.terms && saved.terms.text || "").length
+});
 
   // Restore images into IndexedDB (if present)
   try{
@@ -269,7 +317,8 @@ document.addEventListener("click", async (e)=>{
   app.innerHTML = `
     <div class="card">
       <h2>Settings</h2>
-      <p class="small">Offline-first. Themes + optional daily backup.</p>
+<p class="small">Offline-first. Themes + optional daily backup.</p>
+<div class="small"><b>App version:</b> <span id="app_version_label">-</span></div>
 
       <div class="label">Theme</div>
       <select class="select" id="set_theme">
@@ -302,7 +351,8 @@ const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
 const lastEl = document.getElementById("last_backup_label");
 if(lastEl) lastEl.textContent = fmtLocalDT_(lastIso);
 
-
+const vEl = document.getElementById("app_version_label");
+if(vEl) vEl.textContent = APP_VERSION;
 
 
 
@@ -375,3 +425,4 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
