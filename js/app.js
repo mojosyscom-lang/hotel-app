@@ -22,10 +22,16 @@ const fab = document.getElementById("fab_add");
 let route = "leads";
 
 const SETTINGS_KEY = "hotelcrm_settings_v1";
-
+// Default backup endpoint (auto-filled if not saved yet)
+const DEFAULT_BACKUP_ENDPOINT =
+  "https://script.google.com/macros/s/AKfycbyiLA0xYQ3i8C_nZcU0KLkTFFsz9GVdzQAf-4gZBE3s7bQTDZ7uneFOx2E2e_G832b8LQ/exec?token=hotel-app-superadmin-vishal";
 function loadSettings_(){
   try{
-    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    const obj = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+if(!obj.backup_endpoint){
+  obj.backup_endpoint = DEFAULT_BACKUP_ENDPOINT;
+}
+return obj;
   }catch(e){
     return {};
   }
@@ -367,4 +373,5 @@ if (document.readyState === "loading") {
   window.addEventListener("DOMContentLoaded", init_);
 } else {
   init_();
+
 }
