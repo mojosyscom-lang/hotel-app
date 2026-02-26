@@ -1,0 +1,220 @@
+:root{
+  --bg:#f6f7f8;
+  --card:#ffffff;
+  --text:#0b0f14;
+  --muted:#5f6b76;
+  --brand:#0b3a2a;
+  --brand2:#0f5a40;
+  --border:#e7eaee;
+  --danger:#b42318;
+  --shadow: 0 8px 24px rgba(13,20,33,.08);
+  --radius:16px;
+  --pad:14px;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: linear-gradient(180deg, #eef5f1 0%, var(--bg) 38%, var(--bg) 100%);
+  color:var(--text);
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px 14px;
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
+  color:#fff;
+  border-bottom: 1px solid rgba(255,255,255,.18);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.logoDot{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 10px 30px rgba(0,0,0,.14) inset;
+}
+.brandTitle{
+  font-weight:800;
+  letter-spacing:.2px;
+  line-height:1.1;
+}
+.brandSub{
+  font-size:12px;
+  opacity:.92;
+  margin-top:2px;
+}
+
+.iconBtn{
+  float:right;
+  margin-top:-38px;
+  border:0;
+  background: rgba(255,255,255,.14);
+  color:#fff;
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+.app{
+  padding: 14px 14px 92px 14px;
+  max-width: 700px;
+  margin:0 auto;
+}
+
+.card{
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--pad);
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.card h2{
+  margin:0 0 8px 0;
+  font-size:18px;
+}
+.card p{ margin:0; color:var(--muted); }
+
+.row{
+  display:flex;
+  gap:10px;
+}
+.row > *{ flex:1; }
+
+.label{
+  font-size:12px;
+  color:var(--muted);
+  margin: 10px 0 6px;
+}
+.input, .textarea, .select{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 12px;
+  font-size: 15px;
+  outline:none;
+  background:#fff;
+}
+.textarea{ min-height: 92px; resize:vertical; }
+
+.btnRow{
+  display:flex;
+  gap:10px;
+  margin-top: 12px;
+}
+.btn{
+  border:0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight:700;
+  background:#f0f2f4;
+}
+.btn.primary{
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
+  color:#fff;
+}
+.btn.danger{
+  background: #ffe7e7;
+  color: var(--danger);
+}
+
+.listItem{
+  border:1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 10px;
+  background:#fff;
+}
+.listTop{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.listTitle{
+  font-weight:800;
+  font-size:16px;
+}
+.badge{
+  font-size:12px;
+  padding:6px 10px;
+  border-radius: 999px;
+  border:1px solid var(--border);
+  color: var(--muted);
+  background:#fafbfc;
+  white-space:nowrap;
+}
+.listMeta{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.35;
+}
+
+.bottomNav{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:30;
+  padding: 10px 10px calc(env(safe-area-inset-bottom) + 10px) 10px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  display:flex;
+  gap:8px;
+  justify-content:space-between;
+}
+
+.navBtn{
+  flex:1;
+  border:0;
+  background:transparent;
+  border-radius: 14px;
+  padding: 10px 6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  color: var(--muted);
+}
+.navBtn.active{
+  background:#f1f6f3;
+  color: var(--brand);
+}
+.navIcon{ font-size:18px; }
+.navLabel{ font-size:11px; font-weight:700; }
+
+.fab{
+  position:fixed;
+  right: 16px;
+  bottom: 88px;
+  z-index:40;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  border:0;
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
+  color:#fff;
+  font-size: 26px;
+  box-shadow: 0 18px 40px rgba(11,58,42,.25);
+}
+
+hr.sep{
+  border:0;
+  border-top:1px solid var(--border);
+  margin: 12px 0;
+}
+.small{ font-size:12px; color:var(--muted); }
