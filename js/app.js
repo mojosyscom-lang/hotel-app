@@ -393,10 +393,47 @@ document.getElementById("btn_reset_db").addEventListener("click", ()=>{
 
 
 });
+async function checkForUpdate_(){
+  try{
+    const res = await fetch(`./version.json?ts=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return;
+    const j = await res.json();
+    const latest = String(j.version || "").trim();
+    if(!latest || latest === APP_VERSION) return;
 
+    // show banner
+    let bar = document.getElementById("update_bar");
+    if(!bar){
+      bar = document.createElement("div");
+      bar.id = "update_bar";
+      bar.style.cssText = `
+        position: sticky; top: 0; z-index: 9999;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      `;
+      bar.innerHTML = `
+        <div class="small"><b>Update available</b> (v${latest}). Tap Reload.</div>
+        <button class="btn" id="btn_reload_update">Reload</button>
+      `;
+      document.body.prepend(bar);
+
+      bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
+        // one tap update for your friend
+        window.location.reload();
+      });
+    }
+  }catch(e){
+    // ignore update errors
+  }
+}
 async function init_(){
   applyTheme_();
-
+await checkForUpdate_();
   // Always render header first
   console.log("✅ init_() running, now calling renderHeader()");
   renderHeader();
@@ -425,4 +462,5 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
