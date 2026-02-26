@@ -1,0 +1,16 @@
+:root{
+  --bg:#f6f7f8;
+  --card:#ffffff;
+  --text:#0b0f14;
+  --muted:#5f6b76;
+
+  --brand:#0b2b5a;
+  --brand2:#124a9a;
+
+  --border:#e7eaee;
+  --danger:#b42318;
+
+  --shadow: 0 8px 24px rgba(13,20,33,.08);
+  --radius:16px;
+  --pad:14px;
+}
