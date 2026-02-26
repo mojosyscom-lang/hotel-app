@@ -1,21 +1,64 @@
 import { store } from "../storage.js";
+import { saveBlob, getObjectUrl, deleteBlob, revokeObjectUrl } from "../images_db.js";
+import { applyBranding } from "../components/header.js";
 
 function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
 
-function getCompany_(){
-  const db = store.get();
-  return db.company || {};
+async function paintPreviews_(root){
+  const logo = await getObjectUrl("company_logo");
+  const bg = await getObjectUrl("company_bg");
+  const qr = await getObjectUrl("company_qr");
+
+  const setImg = (id, src)=>{
+    const el = root.querySelector("#" + id);
+    if(!el) return;
+    if(src){
+      el.src = src;
+      el.style.display = "block";
+    }else{
+      el.removeAttribute("src");
+      el.style.display = "none";
+    }
+  };
+
+  setImg("pv_logo", logo);
+  setImg("pv_bg", bg);
+  setImg("pv_qr", qr);
 }
 
-function renderCompanyForm_(root){
-  const c = getCompany_();
+async function onPickImage_(root, key){
+  const inp = root.querySelector(`#${key}_file`);
+  if(!inp || !inp.files || !inp.files[0]) return;
+
+  const file = inp.files[0];
+  const blob = file.slice(0, file.size, file.type);
+
+  revokeObjectUrl(key); // safety
+  await saveBlob(key, blob);
+  await paintPreviews_(root);
+  await applyBranding();
+  inp.value = "";
+}
+
+async function onRemoveImage_(root, key){
+  const ok = confirm("Remove this image?");
+  if(!ok) return;
+  revokeObjectUrl(key);
+  await deleteBlob(key);
+  await paintPreviews_(root);
+  await applyBranding();
+}
+
+export async function renderCompany(root){
+  const db = store.get();
+  const c = db.company || {};
 
   root.innerHTML = `
     <div class="card">
       <h2>Company Profile</h2>
-      <p class="small">Your company details (used in contracts/invoices later).</p>
+      <p class="small">One-person offline app: images stored locally on your phone (IndexedDB).</p>
 
       <div class="label">Company name</div>
       <input class="input" id="c_name" value="${esc_(c.company_name || "")}" placeholder="Your company name" />
@@ -38,16 +81,32 @@ function renderCompanyForm_(root){
       <textarea class="textarea" id="c_address" placeholder="Full address">${esc_(c.address || "")}</textarea>
 
       <hr class="sep" />
-      <h2 style="font-size:16px; margin-top:0;">Brand Assets (URLs)</h2>
+      <h2 style="font-size:16px; margin-top:0;">Header Branding</h2>
 
-      <div class="label">Logo URL</div>
-      <input class="input" id="c_logo" value="${esc_(c.logo_url || "")}" placeholder="https://..." />
+      <div class="label">Logo (stored locally)</div>
+      <input class="input" type="file" id="company_logo_file" accept="image/*" />
+      <div class="btnRow">
+        <button class="btn" id="btn_logo_save">Save Logo</button>
+        <button class="btn danger" id="btn_logo_remove">Remove</button>
+      </div>
+      <img id="pv_logo" style="display:none; width:100%; max-width:220px; margin-top:10px; border-radius:14px; border:1px solid var(--border);" />
 
-      <div class="label">Background URL</div>
-      <input class="input" id="c_bg" value="${esc_(c.background_url || "")}" placeholder="https://..." />
+      <div class="label" style="margin-top:14px;">Header background (stored locally)</div>
+      <input class="input" type="file" id="company_bg_file" accept="image/*" />
+      <div class="btnRow">
+        <button class="btn" id="btn_bg_save">Save Background</button>
+        <button class="btn danger" id="btn_bg_remove">Remove</button>
+      </div>
+      <img id="pv_bg" style="display:none; width:100%; margin-top:10px; border-radius:14px; border:1px solid var(--border);" />
 
-      <div class="label">Bank QR Code URL</div>
-      <input class="input" id="c_qr" value="${esc_(c.bank_qr_url || "")}" placeholder="https://..." />
+      <hr class="sep" />
+      <h2 style="font-size:16px; margin-top:0;">Bank QR (stored locally)</h2>
+      <input class="input" type="file" id="company_qr_file" accept="image/*" />
+      <div class="btnRow">
+        <button class="btn" id="btn_qr_save">Save QR</button>
+        <button class="btn danger" id="btn_qr_remove">Remove</button>
+      </div>
+      <img id="pv_qr" style="display:none; width:100%; max-width:260px; margin-top:10px; border-radius:14px; border:1px solid var(--border);" />
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Bank Details</h2>
@@ -73,28 +132,19 @@ function renderCompanyForm_(root){
       </div>
 
       <div class="btnRow">
-        <button class="btn" id="c_cancel">Cancel</button>
-        <button class="btn primary" id="c_save">Save</button>
+        <button class="btn primary" id="c_save">Save Profile</button>
       </div>
     </div>
   `;
 
-  root.querySelector("#c_cancel").addEventListener("click", ()=> {
-    // just re-render to show latest saved values
-    renderCompanyForm_(root);
-  });
-
-  root.querySelector("#c_save").addEventListener("click", ()=>{
+  // Save text profile
+  root.querySelector("#c_save").addEventListener("click", async ()=>{
     const company = {
       company_name: root.querySelector("#c_name").value.trim(),
       contact_name: root.querySelector("#c_contact").value.trim(),
       phone: root.querySelector("#c_phone").value.trim(),
       address: root.querySelector("#c_address").value.trim(),
       gstin: root.querySelector("#c_gstin").value.trim(),
-
-      logo_url: root.querySelector("#c_logo").value.trim(),
-      background_url: root.querySelector("#c_bg").value.trim(),
-      bank_qr_url: root.querySelector("#c_qr").value.trim(),
 
       bank_name: root.querySelector("#b_name").value.trim(),
       bank_branch: root.querySelector("#b_branch").value.trim(),
@@ -108,16 +158,23 @@ function renderCompanyForm_(root){
     const db2 = store.get();
     db2.company = company;
     store.set(db2);
+    await applyBranding();
     alert("Company profile saved.");
   });
-}
 
-export function renderCompany(root){
-  renderCompanyForm_(root);
+  // Image buttons
+  root.querySelector("#btn_logo_save").addEventListener("click", ()=> onPickImage_(root, "company_logo"));
+  root.querySelector("#btn_bg_save").addEventListener("click", ()=> onPickImage_(root, "company_bg"));
+  root.querySelector("#btn_qr_save").addEventListener("click", ()=> onPickImage_(root, "company_qr"));
+
+  root.querySelector("#btn_logo_remove").addEventListener("click", ()=> onRemoveImage_(root, "company_logo"));
+  root.querySelector("#btn_bg_remove").addEventListener("click", ()=> onRemoveImage_(root, "company_bg"));
+  root.querySelector("#btn_qr_remove").addEventListener("click", ()=> onRemoveImage_(root, "company_qr"));
+
+  await paintPreviews_(root);
 }
 
 export function onFabCompany(root){
-  // focus first input
   const el = root.querySelector("#c_name");
   if(el) el.focus();
 }
