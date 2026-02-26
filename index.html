@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b3a2a" />
+  <title>Hotel CRM</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logoDot" aria-hidden="true"></div>
+      <div class="brandText">
+        <div class="brandTitle">Hotel CRM</div>
+        <div class="brandSub" id="app_subtitle">Leads</div>
+      </div>
+    </div>
+    <button class="iconBtn" id="btn_settings" title="Settings" aria-label="Settings">⚙️</button>
+  </header>
+
+  <main id="app" class="app">
+    <div class="card">
+      <h2>Loading…</h2>
+      <p>Please wait</p>
+    </div>
+  </main>
+
+  <nav class="bottomNav" aria-label="Primary">
+    <button class="navBtn active" data-route="leads">
+      <span class="navIcon">🏨</span><span class="navLabel">Leads</span>
+    </button>
+    <button class="navBtn" data-route="followups">
+      <span class="navIcon">⏰</span><span class="navLabel">Follow-up</span>
+    </button>
+    <button class="navBtn" data-route="contracts">
+      <span class="navIcon">🧾</span><span class="navLabel">Contracts</span>
+    </button>
+    <button class="navBtn" data-route="terms">
+      <span class="navIcon">📄</span><span class="navLabel">Terms</span>
+    </button>
+    <button class="navBtn" data-route="company">
+      <span class="navIcon">🏢</span><span class="navLabel">Company</span>
+    </button>
+  </nav>
+
+  <button class="fab" id="fab_add" title="Add" aria-label="Add">＋</button>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
