@@ -1,3 +1,8 @@
+import { store } from "./storage.js";
+import { renderHeader, applyBranding } from "./components/header.js";
+
+import { exportImagesBase64 } from "./images_db.js";
+
 import { renderLeads, onFabLeads } from "./modules/leads.js";
 import { renderFollowups, onFabFollowups } from "./modules/followups.js";
 import { renderContracts, onFabContracts } from "./modules/contracts.js";
@@ -5,13 +10,91 @@ import { renderTerms, onFabTerms } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
 
 const app = document.getElementById("app");
+/* 
 const subtitle = document.getElementById("app_subtitle");
+
+*/
+// subtitle is inside header component, so it may not exist at initial parse
+
 const navBtns = Array.from(document.querySelectorAll(".navBtn"));
 const fab = document.getElementById("fab_add");
 
 let route = "leads";
 
-function setSubtitle_(t){ subtitle.textContent = t; }
+const SETTINGS_KEY = "hotelcrm_settings_v1";
+
+function loadSettings_(){
+  try{
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+  }catch(e){
+    return {};
+  }
+}
+function saveSettings_(s){
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s || {}));
+}
+
+function applyTheme_(){
+  const s = loadSettings_();
+  const theme = String(s.theme || "green").trim().toLowerCase();
+  const link = document.getElementById("theme_css");
+  if(!link) return;
+
+  const file = theme === "blue" ? "theme-blue.css" : "theme-green.css";
+  link.setAttribute("href", `./css/themes/${file}`);
+}
+
+async function backupOncePerDayOnOpen_(){
+  const s = loadSettings_();
+  const endpoint = String(s.backup_endpoint || "").trim();
+ // Token will be inside endpoint URL as ?token=YOURTOKEN (recommended for Apps Script)
+if(!endpoint) return; // not configured
+
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,"0");
+  const d = String(today.getDate()).padStart(2,"0");
+  const dayKey = `${y}-${m}-${d}`;
+
+  const last = String(localStorage.getItem("hotelcrm_last_backup_day") || "");
+  if(last === dayKey) return;
+
+ const images = await exportImagesBase64(["company_logo","company_bg","company_qr"]);
+
+const payload = {
+  app: "hotelcrm",
+  ts: new Date().toISOString(),
+  data: store.get(),
+  images: {
+    company_logo: images.company_logo || "",
+    company_bg: images.company_bg || "",
+    company_qr: images.company_qr || ""
+  }
+};
+
+  try{
+    await fetch(endpoint, {
+  method: "POST",
+  mode: "no-cors",
+  headers: {
+    "Content-Type": "text/plain;charset=utf-8"
+  },
+  body: JSON.stringify(payload)
+});
+
+// In no-cors mode we can't read status, but if it doesn't throw, it was sent.
+localStorage.setItem("hotelcrm_last_backup_day", dayKey);
+localStorage.setItem("hotelcrm_last_backup_at", new Date().toISOString());
+console.log("✅ Backup sent (no-cors)");
+  }catch(err){
+    console.warn("⚠️ Backup error", err);
+  }
+}
+
+function setSubtitle_(t){
+  const el = document.getElementById("app_subtitle");
+  if(el) el.textContent = t;
+}
 
 function setActiveNav_(r){
   navBtns.forEach(b => b.classList.toggle("active", b.dataset.route === r));
@@ -46,22 +129,242 @@ fab.addEventListener("click", ()=>{
   if(route === "company") return onFabCompany(app, render_);
 });
 
-document.getElementById("btn_settings").addEventListener("click", ()=>{
+
+
+function fmtLocalDT_(iso){
+  if(!iso) return "-";
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yy = d.getFullYear();
+  let hh = d.getHours();
+  const ampm = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12; if(hh===0) hh = 12;
+  const mi = String(d.getMinutes()).padStart(2,"0");
+  return `${dd}-${mm}-${yy} ${String(hh).padStart(2,"0")}:${mi} ${ampm}`;
+}
+
+
+
+function jsonp_(url){
+  return new Promise((resolve, reject)=>{
+    const cb = "hotelcrm_cb_" + Math.random().toString(16).slice(2);
+    const src = url + (url.includes("?") ? "&" : "?") + "callback=" + encodeURIComponent(cb);
+
+    let done = false;
+    window[cb] = (data)=>{
+      done = true;
+      try{ delete window[cb]; }catch(e){ window[cb] = undefined; }
+      script.remove();
+      resolve(data);
+    };
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+
+    script.onerror = ()=>{
+      if(done) return;
+      try{ delete window[cb]; }catch(e){ window[cb] = undefined; }
+      script.remove();
+      reject(new Error("JSONP load failed"));
+    };
+
+    document.head.appendChild(script);
+
+    setTimeout(()=>{
+      if(done) return;
+      try{ delete window[cb]; }catch(e){ window[cb] = undefined; }
+      script.remove();
+      reject(new Error("JSONP timeout"));
+    }, 15000);
+  });
+}
+
+
+
+
+async function restoreFromBackup_(){
+  const s = loadSettings_();
+  const endpoint = String(s.backup_endpoint || "").trim();
+  if(!endpoint){
+    alert("Backup Endpoint URL is empty.");
+    return;
+  }
+
+  // We will call the same endpoint but with ?action=get
+  // Keep token in URL already.
+  const url = endpoint.includes("?")
+    ? (endpoint + "&action=get")
+    : (endpoint + "?action=get");
+
+ let payload;
+try{
+  payload = await jsonp_(url);
+}catch(err){
+  console.warn("Restore JSONP error", err);
+  alert("Restore failed (could not load backup). Check console.");
+  return;
+}
+
+  if(!payload || payload.error){
+    alert("Restore error: " + (payload && payload.error ? payload.error : "Unknown"));
+    return;
+  }
+
+  const data = payload.data || {};
+  const images = payload.images || {};
+
+  // Confirm overwrite
+  const ok = confirm("This will overwrite your current local data with the backup. Continue?");
+  if(!ok) return;
+
+  // Save core data
+  store.set(data);
+
+  // Restore images into IndexedDB (if present)
+  try{
+    const { importImagesBase64 } = await import("./images_db.js");
+    await importImagesBase64(images);
+  }catch(e){
+    console.warn("Image restore skipped/failed", e);
+  }
+
+  // Update last backup label based on backup timestamp
+ if(payload.ts){
+  const iso = String(payload.ts);
+  localStorage.setItem("hotelcrm_last_backup_at", iso);
+
+  // also set day marker to prevent immediate auto-backup
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  localStorage.setItem("hotelcrm_last_backup_day", `${y}-${m}-${dd}`);
+}
+
+  // Refresh branding + UI
+  await applyBranding();
+  route = "leads";
+  render_();
+
+  alert("Restore complete.");
+}
+
+
+
+
+document.addEventListener("click", async (e)=>{
+  const t = e.target;
+  if(!(t && t.id === "btn_settings")) return;
+
+  const s = loadSettings_();
+
   app.innerHTML = `
     <div class="card">
       <h2>Settings</h2>
-      <p class="small">Offline mode (LocalStorage). Sync can be added later.</p>
+      <p class="small">Offline-first. Themes + optional daily backup.</p>
+
+      <div class="label">Theme</div>
+      <select class="select" id="set_theme">
+        <option value="green" ${String(s.theme||"green")==="green"?"selected":""}>Green</option>
+        <option value="blue" ${String(s.theme||"") === "blue"?"selected":""}>Blue</option>
+      </select>
+
+      <hr class="sep" />
+      <h2 style="font-size:16px; margin-top:0;">Daily Backup (Google Drive JSON)</h2>
+      <p class="small">Runs once per day when you open the app (needs a free Apps Script endpoint).</p>
+
+	<div class="small"><b>Last backup:</b> <span id="last_backup_label">-</span></div>
+
+      <div class="label">Backup Endpoint URL</div>
+      <input class="input" id="set_backup_endpoint" value="${(s.backup_endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec" />
+
+     
+      <div class="btnRow">
+  <button class="btn" id="btn_save_settings">Save Settings</button>
+  <button class="btn primary" id="btn_backup_now">Backup Now</button>
+  <button class="btn" id="btn_restore_now">Restore Now</button>
+</div>
+
       <hr class="sep" />
       <button class="btn danger" id="btn_reset_db">Reset all data</button>
     </div>
   `;
-  document.getElementById("btn_reset_db").addEventListener("click", ()=>{
-    const ok = confirm("Delete all local data? This cannot be undone.");
-    if(!ok) return;
-    localStorage.removeItem("hotelcrm_v1");
-    route = "leads";
-    render_();
+
+const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
+const lastEl = document.getElementById("last_backup_label");
+if(lastEl) lastEl.textContent = fmtLocalDT_(lastIso);
+
+
+
+
+
+  document.getElementById("btn_save_settings").addEventListener("click", ()=>{
+    const s2 = loadSettings_();
+    s2.theme = document.getElementById("set_theme").value;
+    s2.backup_endpoint = document.getElementById("set_backup_endpoint").value.trim();
+    
+    saveSettings_(s2);
+    applyTheme_();
+    alert("Settings saved.");
   });
+
+  document.getElementById("btn_backup_now").addEventListener("click", async ()=>{
+    // Force backup now by clearing last-day marker
+    localStorage.removeItem("hotelcrm_last_backup_day");
+    await backupOncePerDayOnOpen_();
+    alert("Backup attempted. Check console if needed.");
+  });
+
+
+document.getElementById("btn_restore_now").addEventListener("click", async ()=>{
+  await restoreFromBackup_();
 });
 
-render_();
+
+document.getElementById("btn_reset_db").addEventListener("click", ()=>{
+  const ok = confirm("Delete all local data? This cannot be undone.");
+  if(!ok) return;
+  localStorage.removeItem("hotelcrm_v1");
+  localStorage.removeItem("hotelcrm_last_backup_day");
+  route = "leads";
+  render_();
+});
+
+
+
+
+
+});
+
+async function init_(){
+  applyTheme_();
+
+  // Always render header first
+  console.log("✅ init_() running, now calling renderHeader()");
+  renderHeader();
+
+  // Then apply branding (logo/background)
+  try{
+    await applyBranding();
+  }catch(e){
+    console.warn("Branding failed", e);
+  }
+
+  // Then backup (optional)
+  try{
+    await backupOncePerDayOnOpen_();
+  }catch(e){
+    console.warn("Backup failed", e);
+  }
+
+  // Finally render route UI
+  render_();
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", init_);
+} else {
+  init_();
+}
