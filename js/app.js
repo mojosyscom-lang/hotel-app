@@ -24,7 +24,8 @@ let route = "leads";
 const SETTINGS_KEY = "hotelcrm_settings_v1";
 
 // App Version
-let APP_VERSION = "0.0.0"; // will be loaded from version.json
+const BUILD_VERSION = "1.0.0"; // ✅ this is the version of the JS bundle you are running
+let LATEST_VERSION = "0.0.0";  // ✅ loaded from version.json
 
 const DEVICE_KEY = "hotelcrm_device_id_v1";
 
@@ -353,6 +354,7 @@ document.addEventListener("click", async (e)=>{
   if(!(t && t.id === "btn_settings")) return;
 
   const s = loadSettings_();
+	await loadLatestVersion_();
 
   app.innerHTML = `
     <div class="card">
@@ -396,7 +398,7 @@ const lastEl = document.getElementById("last_backup_label");
 if(lastEl) lastEl.textContent = fmtLocalDT_(lastIso);
 
 const vEl = document.getElementById("app_version_label");
-if(vEl) vEl.textContent = APP_VERSION;
+if(vEl) vEl.textContent = `${BUILD_VERSION} (latest: ${LATEST_VERSION})`;
 
 
 
@@ -443,37 +445,34 @@ document.getElementById("btn_reset_db").addEventListener("click", ()=>{
 
 // app version checks
 
-async function loadAppVersion_(){
+async function loadLatestVersion_(){
   try{
     const res = await fetch(`./version.json?ts=${Date.now()}`, { cache: "no-store" });
-    if(!res.ok) return APP_VERSION;
+    if(!res.ok) return LATEST_VERSION;
     const j = await res.json();
     const v = String(j.version || "").trim();
-    if(v) APP_VERSION = v;
-// If we are now on the latest version, clear dismissal
-const dis = String(localStorage.getItem("hotelcrm_dismissed_update") || "");
-if(dis && dis === APP_VERSION){
+    if(v) LATEST_VERSION = v;
+	  // If we are now on the latest, clear dismissed marker and hide banner
+if(LATEST_VERSION === BUILD_VERSION){
   localStorage.removeItem("hotelcrm_dismissed_update");
+  const bar = document.getElementById("update_bar");
+  if(bar) bar.remove();
 }
-	  
   }catch(e){
     // ignore
   }
-  return APP_VERSION;
+  return LATEST_VERSION;
 }
 
 
 
 async function checkForUpdate_(){
   try{
-    const res = await fetch(`./version.json?ts=${Date.now()}`, { cache: "no-store" });
-    if(!res.ok) return;
-    const j = await res.json();
-    const latest = String(j.version || "").trim();
+  const latest = String(LATEST_VERSION || "").trim();
     if(!latest) return;
 
 // If latest equals current, no banner
-if(latest === APP_VERSION) return;
+if(latest === BUILD_VERSION) return;
 
 // If user already dismissed this exact latest version, don't show again
 const dismissed = String(localStorage.getItem("hotelcrm_dismissed_update") || "");
@@ -516,7 +515,7 @@ window.location.replace(u.toString());
 }
 async function init_(){
   applyTheme_();
-	await loadAppVersion_();
+	await loadLatestVersion_();
 await checkForUpdate_();
   // Always render header first
   console.log("✅ init_() running, now calling renderHeader()");
@@ -546,6 +545,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
