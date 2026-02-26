@@ -40,7 +40,7 @@ function contractCard_(c, lead){
           <div class="listTitle">${esc_(lead?.company_name || "(Lead missing)")}</div>
           <div class="listMeta">
             <div><b>Final rate:</b> ${esc_(c.final_rate || "-")}</div>
-            <div><b>From:</b> ${esc_(fmtDate_(c.start_date))} <b>To:</b> ${esc_(fmtDate_(c.end_date))}</div>
+            <div><b>From:</b> ${esc_(fmtDate_(c.start_date))} <br><br><b>To:</b> ${esc_(fmtDate_(c.end_date))}</div>
             <div><b>Attachment URL:</b> ${esc_(c.attachment_url || "-")}</div>
           </div>
         </div>
@@ -218,4 +218,5 @@ export function renderContracts(root){
 
 export function onFabContracts(root){
   renderForm_(root, null);
+
 }
