@@ -26,6 +26,18 @@ const SETTINGS_KEY = "hotelcrm_settings_v1";
 // App Version
 let APP_VERSION = "0.0.0"; // will be loaded from version.json
 
+const DEVICE_KEY = "hotelcrm_device_id_v1";
+
+function getDeviceId_(){
+  let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
+  if(!id){
+    // Generate a stable ID for this device/browser
+    id = "dev_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+
 
 // Default backup endpoint (auto-filled if not saved yet)
 const DEFAULT_BACKUP_ENDPOINT =
@@ -72,11 +84,15 @@ if(!endpoint) return; // not configured
 
  const images = await exportImagesBase64(["company_logo","company_bg","company_qr"]);
 
+const s2 = loadSettings_();
+const deviceId = String(s2.device_id || getDeviceId_()).trim() || "default";
+
 const payload = {
   app: "hotelcrm",
   ts: new Date().toISOString(),
+  device_id: deviceId,
   data: store.get(),
-  settings: loadSettings_(), // ✅ include settings
+  settings: s2,
   images: {
     company_logo: images.company_logo || "",
     company_bg: images.company_bg || "",
@@ -243,9 +259,12 @@ async function restoreFromBackup_(){
 
   // We will call the same endpoint but with ?action=get
   // Keep token in URL already.
-  const url = endpoint.includes("?")
-    ? (endpoint + "&action=get")
-    : (endpoint + "?action=get");
+ const s2 = loadSettings_();
+const deviceId = String(s2.device_id || getDeviceId_()).trim() || "default";
+
+const url = endpoint.includes("?")
+  ? (endpoint + `&action=get&device_id=${encodeURIComponent(deviceId)}`)
+  : (endpoint + `?action=get&device_id=${encodeURIComponent(deviceId)}`);
 
  let payload;
 try{
@@ -353,6 +372,10 @@ document.addEventListener("click", async (e)=>{
 
 	<div class="small"><b>Last backup:</b> <span id="last_backup_label">-</span></div>
 
+	<div class="label">Device Backup ID</div>
+<input class="input" id="set_device_id" value="${(s.device_id || getDeviceId_())}" placeholder=" mayank-android / mayank" />
+<div class="small">Use a unique name.</div>
+
       <div class="label">Backup Endpoint URL</div>
       <input class="input" id="set_backup_endpoint" value="${(s.backup_endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec" />
 
@@ -380,6 +403,7 @@ if(vEl) vEl.textContent = APP_VERSION;
   document.getElementById("btn_save_settings").addEventListener("click", ()=>{
     const s2 = loadSettings_();
     s2.theme = document.getElementById("set_theme").value;
+	  s2.device_id = document.getElementById("set_device_id").value.trim();
     s2.backup_endpoint = document.getElementById("set_backup_endpoint").value.trim();
     
     saveSettings_(s2);
@@ -522,6 +546,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
