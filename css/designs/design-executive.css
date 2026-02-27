@@ -1,0 +1,82 @@
+:root{
+  /* Base surfaces */
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: rgba(15, 23, 42, 0.10);
+
+  /* Elevation */
+  --shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
+
+  /* Topbar safe area color (used by meta theme-color) */
+  --meta-theme: #0b3a2a;
+}
+
+/* Page background */
+body{
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Cards */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: 18px;
+}
+
+/* Inputs */
+.input, .select, textarea{
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+/* Small text */
+.small{ color: var(--muted); }
+
+/* Topbar */
+.topbar{
+  border-bottom: 1px solid var(--border);
+  color: #fff; /* topbar text is white on gradient */
+}
+
+/* Bottom nav */
+.navBar{
+  background: rgba(255,255,255,0.92);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+/* Active tab indicator */
+.navBtn.active{
+  color: var(--accent);
+}
+
+/* Buttons */
+.btn{
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 14px;
+}
+.btn.primary{
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+.btn.danger{
+  background: #fff;
+  color: #b91c1c;
+  border-color: rgba(185,28,28,0.25);
+}
+
+/* FAB */
+#fab_add{
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.20);
+}
