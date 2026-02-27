@@ -1,4 +1,7 @@
 :root{
+  --header-overlay-1: rgba(11,58,42,0.78);
+  --header-overlay-2: rgba(15,90,64,0.78);
+  
   --bg:#f6f7f8;
   --card:#ffffff;
   --text:#0b0f14;
@@ -13,4 +16,5 @@
   --shadow: 0 8px 24px rgba(13,20,33,.08);
   --radius:16px;
   --pad:14px;
+
 }
