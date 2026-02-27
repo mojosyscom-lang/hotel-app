@@ -60,22 +60,33 @@ function saveSettings_(s){
 
 function applyTheme_(){
   const s = loadSettings_();
+
   const theme = String(s.theme || "green").trim().toLowerCase();
-  const link = document.getElementById("theme_css");
-  if(!link) return;
+  const design = String(s.design || "executive").trim().toLowerCase(); // executive | dark
 
-  const file = theme === "blue" ? "theme-blue.css" : "theme-green.css";
-  link.setAttribute("href", `./css/themes/${file}`);
-
-	// Update browser top safe-area color
-const meta = document.getElementById("meta_theme_color");
-if(meta){
-  if(theme === "blue"){
-    meta.setAttribute("content", "#1e50aa");
-  }else{
-    meta.setAttribute("content", "#0b3a2a");
+  // Theme (accent)
+  const themeLink = document.getElementById("theme_css");
+  if(themeLink){
+    const file = theme === "blue" ? "theme-blue.css" : "theme-green.css";
+    themeLink.setAttribute("href", `./css/themes/${file}`);
   }
-}
+
+  // Design (layout)
+  const designLink = document.getElementById("design_css");
+  if(designLink){
+    const dfile = (design === "dark") ? "design-dark.css" : "design-executive.css";
+    designLink.setAttribute("href", `./css/designs/${dfile}`);
+  }
+
+  // Update iPhone safe-area / browser top bar color from CSS variable
+  const meta = document.getElementById("meta_theme_color");
+  if(meta){
+    // wait a tick so CSS applies, then read variable
+    setTimeout(()=>{
+      const v = getComputedStyle(document.documentElement).getPropertyValue("--meta-theme").trim();
+      meta.setAttribute("content", v || "#0b3a2a");
+    }, 0);
+  }
 }
 
 async function backupOncePerDayOnOpen_(){
@@ -372,6 +383,13 @@ document.addEventListener("click", async (e)=>{
 <p class="small">Offline-first. Themes + optional daily backup.</p>
 <div class="small"><b>App version:</b> <span id="app_version_label">-</span></div>
 
+
+<div class="label">Design Mode</div>
+<select class="select" id="set_design">
+  <option value="executive" ${String(s.design||"executive")==="executive"?"selected":""}>Executive (Light)</option>
+  <option value="dark" ${String(s.design||"") === "dark"?"selected":""}>Dark Neo (Luxury)</option>
+</select>
+
       <div class="label">Theme</div>
       <select class="select" id="set_theme">
         <option value="green" ${String(s.theme||"green")==="green"?"selected":""}>Green</option>
@@ -414,6 +432,7 @@ if(vEl) vEl.textContent = `${BUILD_VERSION} (latest: ${LATEST_VERSION})`;
 
   document.getElementById("btn_save_settings").addEventListener("click", ()=>{
     const s2 = loadSettings_();
+	  s2.design = document.getElementById("set_design").value;
     s2.theme = document.getElementById("set_theme").value;
 	  s2.device_id = document.getElementById("set_device_id").value.trim();
     s2.backup_endpoint = document.getElementById("set_backup_endpoint").value.trim();
@@ -555,6 +574,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
