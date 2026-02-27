@@ -1,81 +1,122 @@
-/* Theme variables moved to css/themes/theme-*.css */
+/* ==========================================================
+   app.css = Layout + Structure ONLY
+   - No hardcoded colors for light/dark
+   - Design comes from css/designs/design-*.css
+   - Accent comes from css/themes/theme-*.css
+   ========================================================== */
+
 html, body {
   touch-action: manipulation;
-  -webkit-text-size-adjust: 100%; height:100%;
+  -webkit-text-size-adjust: 100%;
+  height: 100%;
 }
-*{ box-sizing:border-box; }
+*{ box-sizing: border-box; }
+
+:root{
+  /* layout tokens (safe defaults if a design file fails to load) */
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: rgba(15, 23, 42, 0.10);
+  --shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
+
+  --radius: 18px;
+  --pad: 14px;
+
+  /* accents (theme files should override) */
+  --accent: #0b7a55;
+  --accent2: #16a34a;
+
+  /* component tokens (design files may override) */
+  --topbar-text: #ffffff;
+  --chip-bg: rgba(255,255,255,0.08);
+  --chip-border: rgba(255,255,255,0.18);
+
+  --btn-bg: rgba(255,255,255,0.06);
+  --btn-text: var(--text);
+
+  --danger: #b91c1c;
+}
 
 body{
-  margin:0;
+  margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: linear-gradient(180deg, #eef5f1 0%, var(--bg) 38%, var(--bg) 100%);
-  color:var(--text);
+  background: var(--bg);
+  color: var(--text);
 }
 
+/* ---------------- Header / Topbar ---------------- */
+
 .topbar{
-  position:sticky;
-  top:0;
-  z-index:20;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   padding: calc(env(safe-area-inset-top) + 10px) 14px 10px 14px;
-  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
-  color:#fff;
-  border-bottom: 1px solid rgba(255,255,255,.18);
+  color: var(--topbar-text);
+  /* background is controlled by header.js (branding) OR design file */
+  border-bottom: 1px solid var(--border);
 }
 
 .brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .brandLogo{
-  width:34px;
-  height:34px;
-  border-radius:10px;
-  object-fit:cover;
-  background: rgba(255,255,255,.16);
-  border: 1px solid rgba(255,255,255,.22);
-  display:block;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  display: block;
 }
 
 .logoDot{
-  width:34px;
-  height:34px;
-  border-radius:10px;
-  background: rgba(255,255,255,.16);
-  border: 1px solid rgba(255,255,255,.22);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
   box-shadow: 0 10px 30px rgba(0,0,0,.14) inset;
 }
+
 .brandTitle{
-  font-weight:800;
-  letter-spacing:.2px;
-  line-height:1.1;
+  font-weight: 800;
+  letter-spacing: .2px;
+  line-height: 1.1;
 }
 .brandSub{
-  font-size:12px;
-  opacity:.92;
-  margin-top:2px;
+  font-size: 12px;
+  opacity: .92;
+  margin-top: 2px;
 }
 
 .iconBtn{
-  float:right;
-  margin-top:-38px;
-  border:0;
-  background: rgba(255,255,255,.14);
-  color:#fff;
-  border-radius:12px;
-  padding:10px 12px;
+  float: right;
+  margin-top: -38px;
+  border: 0;
+  background: var(--chip-bg);
+  color: var(--topbar-text);
+  border-radius: 12px;
+  padding: 10px 12px;
 }
+
+/* ---------------- App container ---------------- */
 
 .app{
   padding: 14px 14px 92px 14px;
   max-width: 700px;
-  margin:0 auto;
+  margin: 0 auto;
 }
+
+/* ---------------- Cards ---------------- */
 
 .card{
   background: var(--card);
-  border:1px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--pad);
   box-shadow: var(--shadow);
@@ -83,141 +124,166 @@ body{
 }
 
 .card h2{
-  margin:0 0 8px 0;
-  font-size:18px;
+  margin: 0 0 8px 0;
+  font-size: 18px;
 }
-.card p{ margin:0; color:var(--muted); }
+.card p{ margin: 0; color: var(--muted); }
 
 .row{
-  display:flex;
-  gap:10px;
+  display: flex;
+  gap: 10px;
 }
-.row > *{ flex:1; }
+.row > *{ flex: 1; }
 
 .label{
-  font-size:12px;
-  color:var(--muted);
+  font-size: 12px;
+  color: var(--muted);
   margin: 10px 0 6px;
 }
+
+/* Inputs */
 .input, .textarea, .select{
-  width:100%;
-  border:1px solid var(--border);
+  width: 100%;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 12px;
   font-size: 15px;
-  outline:none;
-  background:#fff;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
 }
-.textarea{ min-height: 92px; resize:vertical; }
+.textarea{ min-height: 92px; resize: vertical; }
+
+/* ---------------- Buttons ---------------- */
 
 .btnRow{
-  display:flex;
-  gap:10px;
+  display: flex;
+  gap: 10px;
   margin-top: 12px;
+  flex-wrap: wrap;
 }
+
 .btn{
-  border:0;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 14px;
   font-size: 15px;
-  font-weight:700;
-  background:#f0f2f4;
-}
-.btn.primary{
-  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
-  color:#fff;
-}
-.btn.danger{
-  background: #ffe7e7;
-  color: var(--danger);
+  font-weight: 700;
+  background: var(--btn-bg);
+  color: var(--btn-text);
 }
 
+.btn.primary{
+  border-color: transparent;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  color: #fff;
+}
+
+.btn.danger{
+  background: rgba(185,28,28,0.10);
+  color: var(--danger);
+  border-color: rgba(185,28,28,0.25);
+}
+
+/* ---------------- Lists ---------------- */
+
 .listItem{
-  border:1px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 12px;
   margin-top: 10px;
-  background:#fff;
-}
-.listTop{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:flex-start;
-}
-.listTitle{
-  font-weight:800;
-  font-size:16px;
-}
-.badge{
-  font-size:12px;
-  padding:6px 10px;
-  border-radius: 999px;
-  border:1px solid var(--border);
-  color: var(--muted);
-  background:#fafbfc;
-  white-space:nowrap;
-}
-.listMeta{
-  margin-top:6px;
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.35;
+  background: var(--card);
 }
 
+.listTop{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.listTitle{
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.badge{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: rgba(255,255,255,0.06); /* design files can override card transparency */
+  white-space: nowrap;
+}
+
+.listMeta{
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---------------- Bottom nav ---------------- */
+
 .bottomNav{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  z-index:30;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
   padding: 10px 10px calc(env(safe-area-inset-bottom) + 10px) 10px;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
-  display:flex;
-  gap:8px;
-  justify-content:space-between;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  /* background handled by design files */
 }
 
 .navBtn{
-  flex:1;
-  border:0;
-  background:transparent;
+  flex: 1;
+  border: 0;
+  background: transparent;
   border-radius: 14px;
   padding: 10px 6px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   color: var(--muted);
 }
+
 .navBtn.active{
-  background:#f1f6f3;
-  color: var(--brand);
+  background: rgba(255,255,255,0.08);
+  color: var(--accent);
 }
-.navIcon{ font-size:18px; }
-.navLabel{ font-size:11px; font-weight:700; }
+
+.navIcon{ font-size: 18px; }
+.navLabel{ font-size: 11px; font-weight: 700; }
+
+/* ---------------- FAB ---------------- */
 
 .fab{
-  position:fixed;
+  position: fixed;
   right: 16px;
   bottom: 88px;
-  z-index:40;
+  z-index: 40;
   width: 54px;
   height: 54px;
   border-radius: 18px;
-  border:0;
-  background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
-  color:#fff;
+  border: 0;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  color: #fff;
   font-size: 26px;
-  box-shadow: 0 18px 40px rgba(11,58,42,.25);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.25);
 }
 
+/* ---------------- separators / small ---------------- */
+
 hr.sep{
-  border:0;
-  border-top:1px solid var(--border);
+  border: 0;
+  border-top: 1px solid var(--border);
   margin: 12px 0;
 }
 
-.small{ font-size:12px; color:var(--muted); }
+.small{ font-size: 12px; color: var(--muted); }
