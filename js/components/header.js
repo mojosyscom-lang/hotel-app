@@ -67,9 +67,17 @@ export async function applyBranding(){
 
       topbar.style.backgroundSize = "cover";
       topbar.style.backgroundPosition = "center";
-    }else{
-      // clear any previous bg styles
-      topbar.style.backgroundImage = "";
+        }else{
+      // No background image → still show a clean gradient header
+      const overlay1 = getComputedStyle(document.documentElement)
+        .getPropertyValue("--header-overlay-1").trim() || "rgba(11,58,42,.92)";
+
+      const overlay2 = getComputedStyle(document.documentElement)
+        .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.92)";
+
+      topbar.style.backgroundImage =
+        `linear-gradient(90deg, ${overlay1} 0%, ${overlay2} 100%)`;
+
       topbar.style.backgroundSize = "";
       topbar.style.backgroundPosition = "";
     }
