@@ -9,7 +9,14 @@
   /* Elevation */
   --shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
 
-  /* Topbar safe area color (used by meta theme-color) */
+  /* Component tokens used by app.css */
+  --topbar-text: #ffffff;
+  --chip-bg: rgba(255,255,255,0.14);
+  --chip-border: rgba(255,255,255,0.22);
+  --btn-bg: #f0f2f4;
+  --btn-text: var(--text);
+
+  /* Top safe area */
   --meta-theme: #0b3a2a;
 }
 
@@ -28,7 +35,7 @@ body{
 }
 
 /* Inputs */
-.input, .select, textarea{
+.input, .select, textarea, .textarea{
   background: #fff;
   color: var(--text);
   border: 1px solid var(--border);
@@ -41,17 +48,17 @@ body{
 /* Topbar */
 .topbar{
   border-bottom: 1px solid var(--border);
-  color: #fff; /* topbar text is white on gradient */
+  color: var(--topbar-text);
 }
 
-/* Bottom nav */
-.navBar{
+/* Bottom nav (✅ correct selector) */
+.bottomNav{
   background: rgba(255,255,255,0.92);
   border-top: 1px solid var(--border);
   backdrop-filter: blur(10px);
 }
 
-/* Active tab indicator */
+/* Active tab */
 .navBtn.active{
   color: var(--accent);
 }
@@ -59,8 +66,8 @@ body{
 /* Buttons */
 .btn{
   border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
+  background: var(--btn-bg);
+  color: var(--btn-text);
   border-radius: 14px;
 }
 .btn.primary{
@@ -74,8 +81,8 @@ body{
   border-color: rgba(185,28,28,0.25);
 }
 
-/* FAB */
-#fab_add{
+/* FAB (✅ correct selector) */
+.fab{
   background: var(--accent);
   color: #fff;
   box-shadow: 0 16px 34px rgba(0,0,0,0.20);
