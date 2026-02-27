@@ -66,6 +66,16 @@ function applyTheme_(){
 
   const file = theme === "blue" ? "theme-blue.css" : "theme-green.css";
   link.setAttribute("href", `./css/themes/${file}`);
+
+	// Update browser top safe-area color
+const meta = document.getElementById("meta_theme_color");
+if(meta){
+  if(theme === "blue"){
+    meta.setAttribute("content", "#1e50aa");
+  }else{
+    meta.setAttribute("content", "#0b3a2a");
+  }
+}
 }
 
 async function backupOncePerDayOnOpen_(){
@@ -545,6 +555,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
