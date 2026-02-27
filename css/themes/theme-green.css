@@ -1,9 +1,11 @@
 :root{
+    
   --accent: #0b7a55;
   --accent2: #16a34a;
-  
-  --header-overlay-1: rgba(11,58,42,0.78);
-  --header-overlay-2: rgba(15,90,64,0.78);
+ 
+--meta-theme: #0b3a2a;
+--header-overlay-1: rgba(11,58,42,.92);
+--header-overlay-2: rgba(15,90,64,.92);
   
   --bg:#f6f7f8;
   --card:#ffffff;
