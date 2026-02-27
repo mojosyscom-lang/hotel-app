@@ -1,4 +1,7 @@
 :root{
+  --accent: #2563eb;
+  --accent2: #06b6d4;
+  
   --header-overlay-1: rgba(18,50,110,0.78);
   --header-overlay-2: rgba(30,80,170,0.78);
   
@@ -18,3 +21,4 @@
   --pad:14px;
 
 }
+
