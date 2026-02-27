@@ -1,9 +1,12 @@
 :root{
   --accent: #2563eb;
   --accent2: #06b6d4;
+
+--meta-theme: #0a2a5a;
+--header-overlay-1: rgba(10,42,90,.92);
+--header-overlay-2: rgba(20,110,200,.92);
+
   
-  --header-overlay-1: rgba(18,50,110,0.78);
-  --header-overlay-2: rgba(30,80,170,0.78);
   
   --bg:#f6f7f8;
   --card:#ffffff;
