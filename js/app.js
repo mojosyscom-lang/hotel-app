@@ -83,9 +83,9 @@ function applyTheme_(){
   if(meta){
     // wait a tick so CSS applies, then read variable
     setTimeout(()=>{
-      const v = getComputedStyle(document.documentElement).getPropertyValue("--meta-theme").trim();
-      meta.setAttribute("content", v || "#0b3a2a");
-    }, 0);
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--meta-theme").trim();
+  meta.setAttribute("content", v || "#0b3a2a");
+}, 80);
   }
 }
 
