@@ -523,8 +523,8 @@ if(dismissed === latest) return;
         justify-content: space-between;
       `;
       bar.innerHTML = `
-        <div class="small"><b>Update available</b> (v${latest}). Tap Reload.</div>
-        <button class="btn" id="btn_reload_update">Reload</button>
+        <div class="small"><b>New Version available</b> (v${latest})...</div>
+        <button class="btn" id="btn_reload_update">Update</button>
       `;
       document.body.prepend(bar);
 
@@ -574,6 +574,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
