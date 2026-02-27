@@ -5,7 +5,6 @@ export function renderHeader(){
   const host = document.getElementById("app_header");
   if(!host) return;
 
-
   console.log("✅ renderHeader() called, injecting header into #app_header");
 
   host.innerHTML = `
@@ -57,20 +56,22 @@ export async function applyBranding(){
     const bg = localBg || urlBg;
 
     if(bg){
-     const overlay1 = getComputedStyle(document.documentElement)
-  .getPropertyValue("--header-overlay-1").trim() || "rgba(11,58,42,.78)";
+      const overlay1 = getComputedStyle(document.documentElement)
+        .getPropertyValue("--header-overlay-1").trim() || "rgba(11,58,42,.78)";
 
-const overlay2 = getComputedStyle(document.documentElement)
-  .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.78)";
+      const overlay2 = getComputedStyle(document.documentElement)
+        .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.78)";
 
-topbar.style.backgroundImage =
-  `linear-gradient(90deg, ${overlay1} 0%, ${overlay2} 100%), url('${bg}')`;
-      
+      topbar.style.backgroundImage =
+        `linear-gradient(90deg, ${overlay1} 0%, ${overlay2} 100%), url('${bg}')`;
+
       topbar.style.backgroundSize = "cover";
       topbar.style.backgroundPosition = "center";
     }else{
+      // clear any previous bg styles
       topbar.style.backgroundImage = "";
+      topbar.style.backgroundSize = "";
+      topbar.style.backgroundPosition = "";
     }
   }
-
 }
