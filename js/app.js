@@ -9,6 +9,8 @@ import { renderContracts, onFabContracts } from "./modules/contracts.js";
 import { renderTerms, onFabTerms } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
 
+import { renderCompanySettings } from "./modules/company_settings.js";
+
 const app = document.getElementById("app");
 /* 
 const subtitle = document.getElementById("app_subtitle");
@@ -584,13 +586,11 @@ document.addEventListener("click", async (e)=>{
     if(key === "backup") return renderBackupSettings_();
     if(key === "about") return renderAbout_();
     if(key === "company"){
-      // We will move editable company form here next
-      // For now, just navigate to company page read-only
-      closeSheet_();
-      route = "company";
-      render_();
-      return;
-    }
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
+  await renderCompanySettings(body, renderSettingsMenu_);
+  return;
+}
   }
 });
 
@@ -698,6 +698,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
