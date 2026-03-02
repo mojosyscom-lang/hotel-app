@@ -13,6 +13,10 @@ html, body {
 *{ box-sizing: border-box; }
 
 :root{
+    /* Dashboard chart colors */
+  --bar1: var(--brand);
+  --bar2: var(--brand2);
+  --bar3: #ffb020;
   /* layout tokens (safe defaults if a design file fails to load) */
   --bg: #f6f8fb;
   --card: #ffffff;
@@ -378,4 +382,5 @@ hr.sep{
   opacity:0.6;
   font-weight:900;
 }
+
 
