@@ -2,7 +2,7 @@ import { store } from "./storage.js";
 import { renderHeader, applyBranding } from "./components/header.js";
 
 import { exportImagesBase64 } from "./images_db.js";
-
+import { renderDashboard } from "./modules/dashboard.js";
 import { renderLeads, onFabLeads } from "./modules/leads.js";
 import { renderFollowups, onFabFollowups } from "./modules/followups.js";
 import { renderContracts, onFabContracts } from "./modules/contracts.js";
@@ -21,7 +21,7 @@ const subtitle = document.getElementById("app_subtitle");
 const navBtns = Array.from(document.querySelectorAll(".navBtn"));
 const fab = document.getElementById("fab_add");
 
-let route = "leads";
+let route = "dashboard";
 
 const SETTINGS_KEY = "hotelcrm_settings_v1";
 
@@ -155,14 +155,40 @@ function setActiveNav_(r){
 function render_(){
   setActiveNav_(route);
 
-  if(route === "leads"){ setSubtitle_("Leads"); renderLeads(app); fab.style.display = ""; }
-  else if(route === "followups"){ setSubtitle_("Follow-ups"); renderFollowups(app); fab.style.display = ""; }
-  else if(route === "contracts"){ setSubtitle_("Contracts"); renderContracts(app); fab.style.display = ""; }
-  else if(route === "terms"){ setSubtitle_("Terms & Conditions"); renderTerms(app); fab.style.display = ""; }
-  else if(route === "company"){ setSubtitle_("Company Profile"); renderCompany(app); fab.style.display = ""; }
+   if(route === "dashboard"){
+    setSubtitle_("Dashboard");
+    renderDashboard(app);
+    fab.style.display = "none";
+  }
+  else if(route === "leads"){
+    setSubtitle_("Leads");
+    renderLeads(app);
+    fab.style.display = "";
+  }
+  else if(route === "followups"){
+    setSubtitle_("Follow-ups");
+    renderFollowups(app);
+    fab.style.display = "";
+  }
+  else if(route === "contracts"){
+    setSubtitle_("Contracts");
+    renderContracts(app);
+    fab.style.display = "";
+  }
+  else if(route === "terms"){
+    setSubtitle_("Terms & Conditions");
+    renderTerms(app);
+    fab.style.display = "none";
+  }
+  else if(route === "company"){
+    setSubtitle_("Company Details");
+    renderCompany(app);
+    fab.style.display = "none";
+  }
   else{
-    setSubtitle_(""); 
+    setSubtitle_("");
     app.innerHTML = `<div class="card"><h2>Not found</h2><p>Unknown route.</p></div>`;
+    fab.style.display = "none";
   }
 }
 
@@ -698,6 +724,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
