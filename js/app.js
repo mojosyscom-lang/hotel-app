@@ -370,25 +370,75 @@ console.log("✅ Restored counts:", {
 
 
 
-document.addEventListener("click", async (e)=>{
-  const t = e.target;
-  if(!(t && t.id === "btn_settings")) return;
+function openSheet_(){
+  const bd = document.getElementById("settings_sheet");
+  if(!bd) return;
+  bd.style.display = "flex";
+}
+
+function closeSheet_(){
+  const bd = document.getElementById("settings_sheet");
+  if(!bd) return;
+  bd.style.display = "none";
+}
+
+function renderSettingsMenu_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
 
   const s = loadSettings_();
-	await loadLatestVersion_();
+  const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
 
-  app.innerHTML = `
+  body.innerHTML = `
+    <div class="menuItem" data-menu="appearance">
+      <div class="menuLeft">
+        <div class="menuTitle">Appearance</div>
+        <div class="menuSub">Design + Theme</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+
+    <div class="menuItem" data-menu="backup">
+      <div class="menuLeft">
+        <div class="menuTitle">Backup & Restore</div>
+        <div class="menuSub">Last backup: ${fmtLocalDT_(lastIso)}</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+
+    <div class="menuItem" data-menu="company">
+      <div class="menuLeft">
+        <div class="menuTitle">Company Settings</div>
+        <div class="menuSub">Edit profile + Logo/Background/QR</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+
+    <div class="menuItem" data-menu="about">
+      <div class="menuLeft">
+        <div class="menuTitle">About</div>
+        <div class="menuSub">Version: ${BUILD_VERSION} (latest: ${LATEST_VERSION})</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+  `;
+}
+
+function renderAppearanceSettings_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
+
+  const s = loadSettings_();
+
+  body.innerHTML = `
     <div class="card">
-      <h2>Settings</h2>
-<p class="small">Offline-first. Themes + optional daily backup.</p>
-<div class="small"><b>App version:</b> <span id="app_version_label">-</span></div>
+      <h2>Appearance</h2>
 
-
-<div class="label">Design Mode</div>
-<select class="select" id="set_design">
-  <option value="executive" ${String(s.design||"executive")==="executive"?"selected":""}>Executive (Light)</option>
-  <option value="dark" ${String(s.design||"") === "dark"?"selected":""}>Dark Neo (Luxury)</option>
-</select>
+      <div class="label">Design Mode</div>
+      <select class="select" id="set_design">
+        <option value="executive" ${String(s.design||"executive")==="executive"?"selected":""}>Executive (Light)</option>
+        <option value="dark" ${String(s.design||"") === "dark"?"selected":""}>Dark Neo (Luxury)</option>
+      </select>
 
       <div class="label">Theme</div>
       <select class="select" id="set_theme">
@@ -396,78 +446,152 @@ document.addEventListener("click", async (e)=>{
         <option value="blue" ${String(s.theme||"") === "blue"?"selected":""}>Blue</option>
       </select>
 
-      <hr class="sep" />
-      <h2 style="font-size:16px; margin-top:0;">Daily Backup (Google Drive JSON)</h2>
-      <p class="small">Runs once per day when you open the app (needs a free Apps Script endpoint).</p>
+      <div class="btnRow">
+        <button class="btn" id="btn_back_menu">Back</button>
+        <button class="btn primary" id="btn_save_appearance">Save</button>
+      </div>
+    </div>
+  `;
 
-	<div class="small"><b>Last backup:</b> <span id="last_backup_label">-</span></div>
+  document.getElementById("btn_back_menu").addEventListener("click", renderSettingsMenu_);
 
-	<div class="label">Device Backup ID</div>
-<input class="input" id="set_device_id" value="${(s.device_id || getDeviceId_())}" placeholder=" mayank-android / mayank" />
-<div class="small">Use a unique name.</div>
+  document.getElementById("btn_save_appearance").addEventListener("click", ()=>{
+    const s2 = loadSettings_();
+    s2.design = document.getElementById("set_design").value;
+    s2.theme = document.getElementById("set_theme").value;
+    saveSettings_(s2);
+    applyTheme_();
+    applyBranding(); // refresh header overlay immediately
+    alert("Saved.");
+  });
+}
+
+function renderBackupSettings_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
+
+  const s = loadSettings_();
+  const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
+
+  body.innerHTML = `
+    <div class="card">
+      <h2>Backup & Restore</h2>
+      <div class="small"><b>Last backup:</b> ${fmtLocalDT_(lastIso)}</div>
+
+      <div class="label">Device Backup ID</div>
+      <input class="input" id="set_device_id" value="${(s.device_id || getDeviceId_())}" />
 
       <div class="label">Backup Endpoint URL</div>
-      <input class="input" id="set_backup_endpoint" value="${(s.backup_endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec" />
+      <input class="input" id="set_backup_endpoint" value="${(s.backup_endpoint||"")}" />
 
-     
       <div class="btnRow">
-  <button class="btn" id="btn_save_settings">Save Settings</button>
-  <button class="btn primary" id="btn_backup_now">Backup Now</button>
-  <button class="btn" id="btn_restore_now">Restore Now</button>
-</div>
+        <button class="btn" id="btn_back_menu">Back</button>
+        <button class="btn" id="btn_save_backup">Save</button>
+      </div>
+
+      <hr class="sep" />
+
+      <div class="btnRow">
+        <button class="btn primary" id="btn_backup_now">Backup Now</button>
+        <button class="btn" id="btn_restore_now">Restore Now</button>
+      </div>
 
       <hr class="sep" />
       <button class="btn danger" id="btn_reset_db">Reset all data</button>
     </div>
   `;
 
-const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
-const lastEl = document.getElementById("last_backup_label");
-if(lastEl) lastEl.textContent = fmtLocalDT_(lastIso);
+  document.getElementById("btn_back_menu").addEventListener("click", renderSettingsMenu_);
 
-const vEl = document.getElementById("app_version_label");
-if(vEl) vEl.textContent = `${BUILD_VERSION} (latest: ${LATEST_VERSION})`;
-
-
-
-  document.getElementById("btn_save_settings").addEventListener("click", ()=>{
+  document.getElementById("btn_save_backup").addEventListener("click", ()=>{
     const s2 = loadSettings_();
-	  s2.design = document.getElementById("set_design").value;
-    s2.theme = document.getElementById("set_theme").value;
-	  s2.device_id = document.getElementById("set_device_id").value.trim();
+    s2.device_id = document.getElementById("set_device_id").value.trim();
     s2.backup_endpoint = document.getElementById("set_backup_endpoint").value.trim();
-    
     saveSettings_(s2);
-    applyTheme_();
-    alert("Settings saved.");
+    alert("Saved.");
   });
 
   document.getElementById("btn_backup_now").addEventListener("click", async ()=>{
-    // Force backup now by clearing last-day marker
     localStorage.removeItem("hotelcrm_last_backup_day");
     await backupOncePerDayOnOpen_();
     alert("Backup attempted. Check console if needed.");
   });
 
+  document.getElementById("btn_restore_now").addEventListener("click", async ()=>{
+    await restoreFromBackup_();
+  });
 
-document.getElementById("btn_restore_now").addEventListener("click", async ()=>{
-  await restoreFromBackup_();
-});
+  document.getElementById("btn_reset_db").addEventListener("click", ()=>{
+    const ok = confirm("Delete all local data? This cannot be undone.");
+    if(!ok) return;
+    localStorage.removeItem("hotelcrm_v1");
+    localStorage.removeItem("hotelcrm_last_backup_day");
+    route = "leads";
+    render_();
+    alert("Reset complete.");
+  });
+}
 
+function renderAbout_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
 
-document.getElementById("btn_reset_db").addEventListener("click", ()=>{
-  const ok = confirm("Delete all local data? This cannot be undone.");
-  if(!ok) return;
-  localStorage.removeItem("hotelcrm_v1");
-  localStorage.removeItem("hotelcrm_last_backup_day");
-  route = "leads";
-  render_();
-});
+  body.innerHTML = `
+    <div class="card">
+      <h2>About</h2>
+      <p class="small">Hotel CRM — Offline-first</p>
+      <div class="small"><b>Build:</b> ${BUILD_VERSION}</div>
+      <div class="small"><b>Latest:</b> ${LATEST_VERSION}</div>
 
+      <div class="btnRow">
+        <button class="btn" id="btn_back_menu">Back</button>
+      </div>
+    </div>
+  `;
 
+  document.getElementById("btn_back_menu").addEventListener("click", renderSettingsMenu_);
+}
 
+document.addEventListener("click", async (e)=>{
+  const t = e.target;
 
+  // Open sheet
+  if(t && t.id === "btn_settings"){
+    await loadLatestVersion_();
+    await checkForUpdate_();
+    openSheet_();
+    renderSettingsMenu_();
+    return;
+  }
 
+  // Close sheet (X)
+  if(t && t.id === "btn_sheet_close"){
+    closeSheet_();
+    return;
+  }
+
+  // Close when tapping backdrop
+  if(t && t.id === "settings_sheet"){
+    closeSheet_();
+    return;
+  }
+
+  // Menu navigation inside sheet
+  const item = t && t.closest ? t.closest(".menuItem") : null;
+  if(item && item.dataset && item.dataset.menu){
+    const key = item.dataset.menu;
+    if(key === "appearance") return renderAppearanceSettings_();
+    if(key === "backup") return renderBackupSettings_();
+    if(key === "about") return renderAbout_();
+    if(key === "company"){
+      // We will move editable company form here next
+      // For now, just navigate to company page read-only
+      closeSheet_();
+      route = "company";
+      render_();
+      return;
+    }
+  }
 });
 
 
@@ -574,6 +698,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
