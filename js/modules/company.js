@@ -61,14 +61,14 @@ export async function renderCompany(root){
       <h2 style="font-size:16px; margin-top:0;">Branding</h2>
 
       <div class="small">Logo</div>
-      <img id="pv_logo_ro" style="display:none; width:100%; max-width:220px; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
+      <img id="pv_logo_ro" style="display:none; width:100%; max-width:100px; max-height:100px; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
 
       <div class="small" style="margin-top:14px;">Header background</div>
-      <img id="pv_bg_ro" style="display:none; width:100%; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
+      <img id="pv_bg_ro" style="display:none; width:100%; max-width:100px; max-height:100px; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Bank QR</h2>
-      <img id="pv_qr_ro" style="display:none; width:100%; max-width:260px; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
+      <img id="pv_qr_ro" style="display:none; width:100%; max-width:100px; max-height:100px; margin-top:8px; border-radius:14px; border:1px solid var(--border);" />
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Bank Details</h2>
@@ -82,17 +82,11 @@ export async function renderCompany(root){
         <div>${row_("IFSC", c.bank_ifsc)}</div>
       </div>
 
-      <div class="btnRow">
-        <button class="btn" id="btn_open_company_settings">Open Company Settings</button>
-      </div>
+     
     </div>
   `;
 
-  root.querySelector("#btn_open_company_settings").addEventListener("click", ()=>{
-    // Trigger settings button click (opens sheet)
-    const gear = document.getElementById("btn_settings");
-    if(gear) gear.click();
-  });
+ 
 
   await paintPreviewsReadOnly_(root);
 }
@@ -100,3 +94,4 @@ export async function renderCompany(root){
 export function onFabCompany(root){
   // No FAB action in read-only view
 }
+
