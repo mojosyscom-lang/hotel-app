@@ -17,7 +17,8 @@ function barSvg_(items){
     const v = n_(it.value);
     const h = Math.round((v/max) * innerH);
     const y = padT + (innerH - h);
-    const rect = `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="10" ry="10" fill="var(--brand)"></rect>`;
+    const colorVar = (it.label === "Leads") ? "var(--bar1)" : (it.label === "Follow") ? "var(--bar2)" : "var(--bar3)";
+    const rect = `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="10" ry="10" fill="${colorVar}"></rect>`;
     const lbl = `<text x="${x + bw/2}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${it.label}</text>`;
     const val = `<text x="${x + bw/2}" y="${y-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${v}</text>`;
     x += bw + gap;
@@ -56,7 +57,7 @@ export function renderDashboard(root){
   root.innerHTML = `
     <div class="card">
       <h2>Dashboard</h2>
-      <p class="small">Quick overview of your Hotel CRM.</p>
+      
     </div>
 
     <div class="card">
@@ -77,22 +78,13 @@ export function renderDashboard(root){
           <div class="small">Contracts</div>
           <div style="font-size:26px; font-weight:900; margin-top:4px;">${contracts}</div>
         </div>
-        <div class="card" style="margin:0;">
-          <div class="small">Company set?</div>
-          <div style="font-size:22px; font-weight:900; margin-top:8px;">${companyDone}</div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <div class="card" style="margin:0;">
+       <div class="card" style="margin:0;">
           <div class="small">Terms added?</div>
           <div style="font-size:22px; font-weight:900; margin-top:8px;">${termsDone}</div>
         </div>
-        <div class="card" style="margin:0;">
-          <div class="small">Terms length</div>
-          <div style="font-size:22px; font-weight:900; margin-top:8px;">${termsLen}</div>
-        </div>
       </div>
+
+     
     </div>
 
     <div class="card">
