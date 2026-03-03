@@ -78,17 +78,23 @@ function buildBookingJobs_(bookingId, start_date, start_time){
     return true;
   });
 
-  const jobs = cleaned.map((fire_at, idx)=>({
+    const now = Date.now();
+  const future = cleaned.filter(iso => {
+    const t2 = Date.parse(iso);
+    return isFinite(t2) && t2 > (now + 60000); // only > 1 minute in future
+  });
+
+  const jobs = future.map((fire_at, idx)=>({
     job_id: `BK:${bookingId}:${idx}`,
     fire_at,
     payload: {
       title: "Hotel CRM — Booking",
-            body: `📅 ${String(start_date||"")} ${String(start_time||"")}` ,
-            url: `?n=calendar&day=${encodeURIComponent(start_date)}`
+      body: `📅 ${String(start_date||"")} ${String(start_time||"")}`,
+      url: `?n=calendar&day=${encodeURIComponent(start_date)}`
     }
   }));
 
-  const job_ids = cleaned.map((_, idx)=>`BK:${bookingId}:${idx}`);
+  const job_ids = future.map((_, idx)=>`BK:${bookingId}:${idx}`);
   return { job_ids, jobs };
 }
 
@@ -133,6 +139,37 @@ function addDays_(iso, days){
 function inRange_(dayIso, startIso, endIso){
   // inclusive range
   return (dayIso >= startIso && dayIso <= endIso);
+}
+
+/* --------------------------------------------------
+   Check if a room is already booked for date range
+-------------------------------------------------- */
+function roomConflict_(db, room, start_date, end_date, ignoreId){
+  const list = Array.isArray(db.bookings) ? db.bookings : [];
+
+  for(const b of list){
+
+    if(ignoreId && String(b.id) === String(ignoreId)) continue;
+
+    const existingRooms = String(b.room_no || "")
+      .split(",")
+      .map(x=>x.trim())
+      .filter(Boolean);
+
+    if(!existingRooms.includes(room)) continue;
+
+    const s = String(b.start_date || "");
+    const e = String(b.end_date || "");
+
+    if(!s || !e) continue;
+
+    // overlap check
+    if(!(end_date < s || start_date > e)){
+      return b;
+    }
+  }
+
+  return null;
 }
 
 function ensureBookings_(db){
@@ -295,19 +332,49 @@ function openDaySheet_(root, dayIso){
 
   const list = listForDay_(db, dayIso);
 
-  const rows = list.map(b=>{
+   const rows = list.map(b=>{
     const type = String(b.type||"room");
     const dotClass = type === "event" ? "event" : "room";
-    const title = esc_(b.title || "");
+
+    const title = esc_(b.title || ""); // company name (your new meaning)
     const note = esc_(b.note || "");
     const range = `${esc_(b.start_date)} → ${esc_(b.end_date)}`;
+
+    const roomNo = String(b.room_no || "").trim();
+    const booker = String(b.booker_name || "").trim();
+    const phone = String(b.contact_number || "").trim();
+
+       // Better labels
+    const roomPretty = roomNo
+      ? roomNo.split(",").map(x=>x.trim()).filter(Boolean).join(", ")
+      : "";
+
+    const typeLabel = (type === "event")
+      ? "Event"
+      : (`Room${roomPretty ? " • " + esc_(roomPretty) : ""}`);
+
+    const who = (booker || phone)
+      ? `${booker ? esc_(booker) : "-"}${phone ? " • " + esc_(phone) : ""}`
+      : "";
+
+    const time = String(b.start_time || "").trim();
+    const arrive = (time ? `${esc_(dayIso)} ${esc_(time)}` : `${esc_(dayIso)}`);
 
     return `
       <div class="listItem">
         <div class="listTop">
           <div>
-            <div class="listTitle"><span class="dot ${dotClass}" style="vertical-align:middle; margin-right:8px;"></span>${title || "(No title)"}</div>
-            <div class="listMeta">${range}${note ? `<br>${note}` : ""}</div>
+            <div class="listTitle">
+              <span class="dot ${dotClass}" style="vertical-align:middle; margin-right:8px;"></span>
+              ${title || "(No company name)"}
+            </div>
+            <div class="listMeta">
+                            <div><b>${typeLabel}</b></div>
+              ${who ? `<div><b>Booker:</b> ${who}</div>` : ``}
+              <div><b>Arrive:</b> ${arrive}</div>
+              <div>${range}</div>
+              ${note ? `<div>${note}</div>` : ``}
+            </div>
           </div>
           <div style="display:flex; gap:8px;">
             <button class="btn" data-act="edit" data-id="${esc_(b.id)}" type="button">Edit</button>
@@ -364,7 +431,10 @@ function openEditSheet_(root, dayIso, booking){
    const b = booking || {
     id: "",
     type: "room",
-    title: "",
+    title: "",          // will now be "Company name"
+    room_no: "",
+    booker_name: "",
+    contact_number: "",
     note: "",
     start_date: dayIso,
     end_date: dayIso,
@@ -377,16 +447,16 @@ function openEditSheet_(root, dayIso, booking){
       <button class="sheetClose" id="cal_close2" type="button">Close</button>
     </div>
 
-    <div class="label">Type</div>
+        <div class="label">Type</div>
     <select class="select" id="bk_type">
       <option value="room" ${String(b.type)==="room"?"selected":""}>Room</option>
       <option value="event" ${String(b.type)==="event"?"selected":""}>Event</option>
     </select>
 
-    <div class="label">Title</div>
-    <input class="input" id="bk_title" value="${esc_(b.title||"")}" placeholder="Eg: Room 101 / Wedding / Conference" />
+    <div class="label">Company name</div>
+    <input class="input" id="bk_title" value="${esc_(b.title||"")}" placeholder="Hotel / Company name" />
 
-    <div class="label">Start date</div>
+      <div class="label">Start date</div>
     <input class="input" id="bk_start" type="date" value="${esc_(b.start_date||dayIso)}" />
 
         <div class="label">Start time</div>
@@ -394,6 +464,21 @@ function openEditSheet_(root, dayIso, booking){
 
     <div class="label">End date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
+
+    <div id="bk_room_wrap">
+      <div class="label">Room No</div>
+      
+      <input class="input" id="bk_room_no" value="${esc_(b.room_no||"")}" placeholder="Room numbers (e.g. 101,102,103)" inputmode="numeric" />
+      <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="label">Booker name</div>
+    <input class="input" id="bk_booker" value="${esc_(b.booker_name||"")}" placeholder="Person name" />
+
+    <div class="label">Contact number</div>
+    <input class="input" id="bk_phone" value="${esc_(b.contact_number||"")}" placeholder="10-digit mobile" inputmode="tel" maxlength="10" />
+
+  
 
     <div class="label">Notes</div>
     <textarea class="textarea" id="bk_note" placeholder="Optional notes">${esc_(b.note||"")}</textarea>
@@ -411,21 +496,190 @@ function openEditSheet_(root, dayIso, booking){
   const startEl = document.getElementById("bk_start");
   const endEl = document.getElementById("bk_end");
 
-  function clampRange_(){
-    const s = String(startEl.value||"");
-    const e = String(endEl.value||"");
-    if(s && e && e < s){
-      endEl.value = s;
+const typeEl = document.getElementById("bk_type");
+const roomWrap = document.getElementById("bk_room_wrap");
+const roomEl = document.getElementById("bk_room_no");
+const phoneEl = document.getElementById("bk_phone");
+  const roomStatusEl = document.getElementById("bk_room_status");
+
+/* -------------------------
+   Room type toggle
+------------------------- */
+function syncRoomUi_(){
+  const t = String(typeEl?.value || "room");
+
+  if(t === "room"){
+    if(roomWrap) roomWrap.style.display = "";
+  }else{
+    if(roomWrap) roomWrap.style.display = "none";
+    if(roomEl) roomEl.value = "";
+  }
+}
+
+  function syncRoomAvailabilityUi_(){
+  if(!roomStatusEl) return;
+
+  const t = String(typeEl?.value || "room");
+if(t !== "room" || !roomWrap){
+  roomStatusEl.innerHTML = "";
+  return;
+}
+
+  const start_date = String(startEl?.value || "").trim();
+  const end_date = String(endEl?.value || "").trim();
+  const rawRooms = String(roomEl?.value || "");
+
+  if(!start_date || !end_date){
+    roomStatusEl.innerHTML = "Select start/end date to check availability.";
+    return;
+  }
+
+  const rooms = rawRooms
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  if(!rooms.length){
+    roomStatusEl.innerHTML = `<span style="color:#888;">Enter room numbers to check availability</span>`;
+    return;
+  }
+
+  const dbCheck = store.get();
+  ensureBookings_(dbCheck);
+
+  const ignoreId = (isEdit ? b.id : null);
+
+      // Collect all known rooms from existing bookings (room_no values)
+  const allRoomsSet = new Set();
+  (dbCheck.bookings || []).forEach(bb=>{
+    String(bb.room_no || "")
+      .split(",")
+      .map(x=>x.trim())
+      .filter(Boolean)
+      .forEach(rn=> allRoomsSet.add(rn));
+  });
+  const allRooms = Array.from(allRoomsSet).sort((a,b)=> Number(a)-Number(b));
+
+
+    
+
+  let hasConflict = false;
+
+  const lines = rooms.map(r=>{
+    const conflict = roomConflict_(dbCheck, r, start_date, end_date, ignoreId);
+    if(conflict){
+      hasConflict = true;
+      return `<div>Room <b>${esc_(r)}</b> <span style="color:#d93025;">❌ Booked</span> (${esc_(conflict.start_date)} → ${esc_(conflict.end_date)})</div>`;
+    }
+    return `<div>Room <b>${esc_(r)}</b> <span style="color:#188038;">✅ Available</span></div>`;
+  });
+
+  // Suggestions: rooms we know, that are NOT booked in selected range and not already typed
+  let sugHtml = "";
+  if(hasConflict && allRooms.length){
+    const typedSet = new Set(rooms);
+
+    const available = allRooms.filter(rn=>{
+      if(typedSet.has(rn)) return false;
+      const c = roomConflict_(dbCheck, rn, start_date, end_date, ignoreId);
+      return !c;
+    });
+
+    const top = available.slice(0, 6); // show up to 6 suggestions
+    if(top.length){
+      sugHtml = `
+        <div style="margin-top:8px;">
+          <div style="color:#666; margin-bottom:6px;">Suggested available rooms:</div>
+          <div id="bk_room_sugs" style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${top.map(rn=>`<button type="button" class="btn" data-sug-room="${esc_(rn)}" style="padding:6px 10px;">${esc_(rn)}</button>`).join("")}
+          </div>
+        </div>
+      `;
     }
   }
-  startEl.addEventListener("change", clampRange_);
-  endEl.addEventListener("change", clampRange_);
+
+  roomStatusEl.innerHTML = lines.join("") + sugHtml;
+}
+
+if(typeEl){
+  typeEl.addEventListener("change", ()=>{
+    syncRoomUi_();
+    syncRoomAvailabilityUi_();
+  });
+}
+
+syncRoomUi_();
+  syncRoomAvailabilityUi_();
+
+/* -------------------------
+   Room numbers input
+   allows: 101,102,103
+------------------------- */
+if(roomEl){
+  roomEl.addEventListener("input", ()=>{
+    let v = String(roomEl.value || "");
+
+    v = v.replace(/[^\d,]/g, "");   // allow digits + comma
+    v = v.replace(/,{2,}/g, ",");   // collapse multiple commas
+    v = v.replace(/^,|,$/g, "");    // trim comma start/end
+
+    roomEl.value = v;
+
+    // live availability check
+    syncRoomAvailabilityUi_();
+  });
+}
+
+  // Click suggestion → append room number
+if(roomStatusEl){
+  roomStatusEl.addEventListener("click", (e)=>{
+    const btn = e.target && e.target.closest ? e.target.closest("[data-sug-room]") : null;
+    if(!btn) return;
+    const rn = String(btn.getAttribute("data-sug-room") || "").trim();
+    if(!rn || !roomEl) return;
+
+    const current = String(roomEl.value || "").trim();
+    const parts = current ? current.split(",").map(x=>x.trim()).filter(Boolean) : [];
+    if(!parts.includes(rn)) parts.push(rn);
+
+    roomEl.value = parts.join(",");
+    syncRoomAvailabilityUi_();
+  });
+}
+
+/* -------------------------
+   Phone number input
+------------------------- */
+if(phoneEl){
+  phoneEl.addEventListener("input", ()=>{
+    const digits = String(phoneEl.value || "")
+      .replace(/\D/g,"")
+      .slice(0,10);
+
+    phoneEl.value = digits;
+  });
+}
+  
+
+ function clampRange_(){
+  const s = String(startEl.value||"");
+  const e = String(endEl.value||"");
+  if(s && e && e < s){
+    endEl.value = s;
+  }
+  syncRoomAvailabilityUi_();
+}
+startEl.addEventListener("change", clampRange_);
+endEl.addEventListener("change", clampRange_);
 
     document.getElementById("bk_save").addEventListener("click", async ()=>{
     clampRange_();
 
-    const type = document.getElementById("bk_type").value;
-    const title = document.getElementById("bk_title").value.trim();
+      const type = document.getElementById("bk_type").value;
+    const title = document.getElementById("bk_title").value.trim(); // Company name
+    const room_no = String((document.getElementById("bk_room_no")?.value||"")).trim();
+    const booker_name = String((document.getElementById("bk_booker")?.value||"")).trim();
+    const contact_number = String((document.getElementById("bk_phone")?.value||"")).replace(/\D/g,"").slice(0,10);
     const note = document.getElementById("bk_note").value.trim();
     const start_date = String(startEl.value||"").trim();
     const end_date = String(endEl.value||"").trim();
@@ -439,6 +693,50 @@ function openEditSheet_(root, dayIso, booking){
       alert("End date cannot be before start date.");
       return;
     }
+          if(!title){
+      alert("Please enter company name.");
+      return;
+    }
+    if(String(type)==="room" && !room_no){
+      alert("Please enter room number.");
+      return;
+    }
+
+      if(type === "room"){
+
+  const dbCheck = store.get();
+  ensureBookings_(dbCheck);
+
+  const rooms = room_no
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  for(const r of rooms){
+
+    const conflict = roomConflict_(
+      dbCheck,
+      r,
+      start_date,
+      end_date,
+      isEdit ? b.id : null
+    );
+
+    if(conflict){
+      alert(
+        `Room ${r} is already booked from ${conflict.start_date} to ${conflict.end_date}.`
+      );
+      return;
+    }
+
+  }
+}
+
+      
+    if(contact_number.length !== 10){
+      alert("Contact number must be exactly 10 digits.");
+      return;
+    }
 
     const db = store.get();
     ensureBookings_(db);
@@ -448,7 +746,8 @@ function openEditSheet_(root, dayIso, booking){
       if(idx >= 0){
         db.bookings[idx] = {
           ...db.bookings[idx],
-          type, title, note, start_date, end_date,
+          type, title, room_no, booker_name, contact_number,
+          note, start_date, end_date,
                     start_time,
           updated_at: store.nowISO()
         };
@@ -458,6 +757,9 @@ function openEditSheet_(root, dayIso, booking){
         id: uid_(),
         type,
         title,
+        room_no,
+        booker_name,
+        contact_number,
         note,
         start_date,
         end_date,
