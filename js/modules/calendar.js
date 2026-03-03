@@ -1,5 +1,109 @@
 import { store } from "../storage.js";
 
+const SETTINGS_KEY = "hotelcrm_settings_v1";
+const DEVICE_KEY = "hotelcrm_device_id_v1";
+
+function getDeviceIdLite_(){
+  let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
+  if(!id){
+    id = "dev_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+function getEffectiveDeviceId_(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    return String(s.device_id || getDeviceIdLite_()).trim() || getDeviceIdLite_();
+  }catch(e){
+    return getDeviceIdLite_();
+  }
+}
+function workerUrl_(){
+  return String(window.__HOTELCRM_PUSH_WORKER_URL__ || "").trim();
+}
+async function postWorker_(path, payload){
+  const base = workerUrl_();
+  if(!base) throw new Error("Push Worker URL missing");
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify(payload || {})
+  });
+  const txt = await res.text();
+  let j = null; try{ j = JSON.parse(txt); }catch(e){}
+  if(!res.ok || (j && j.error)) throw new Error((j && j.error) ? j.error : `HTTP ${res.status}: ${txt}`);
+  return j || { ok:true };
+}
+
+function isoLocal_(y,m,d,hh,mm){
+  const dt = new Date(y, m, d, hh, mm, 0, 0);
+  return dt.toISOString();
+}
+
+function parseHHMM_(hhmm){
+  const [h,m] = String(hhmm||"").split(":").map(x=>parseInt(x,10));
+  return { h: isFinite(h)?h:9, m: isFinite(m)?m:0 };
+}
+
+function buildBookingJobs_(bookingId, start_date, start_time){
+  // start_date is "YYYY-MM-DD"
+  const dt = parseIso_(start_date); // you already have parseIso_ in file
+  if(!dt) return { job_ids:[], jobs:[] };
+
+  const y = dt.getFullYear();
+  const m = dt.getMonth();
+  const d = dt.getDate();
+
+  const prev = new Date(y, m, d);
+  prev.setDate(prev.getDate() - 1);
+
+  const t = parseHHMM_(start_time || "09:00");
+  const oneHourBefore = new Date(y, m, d, t.h, t.m, 0, 0);
+  oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+
+  const fires = [
+    isoLocal_(prev.getFullYear(), prev.getMonth(), prev.getDate(), 9, 0),
+    isoLocal_(prev.getFullYear(), prev.getMonth(), prev.getDate(), 14, 0),
+    isoLocal_(prev.getFullYear(), prev.getMonth(), prev.getDate(), 19, 0),
+    isoLocal_(y, m, d, 9, 0),
+    oneHourBefore.toISOString()
+  ];
+
+  const seen = new Set();
+  const cleaned = fires.filter(x=>{
+    const k = String(x||"");
+    if(!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  const jobs = cleaned.map((fire_at, idx)=>({
+    job_id: `BK:${bookingId}:${idx}`,
+    fire_at,
+    payload: {
+      title: "Hotel CRM — Booking",
+      body: "📅 Booking reminder",
+      url: `/?n=calendar&day=${encodeURIComponent(start_date)}`
+    }
+  }));
+
+  const job_ids = cleaned.map((_, idx)=>`BK:${bookingId}:${idx}`);
+  return { job_ids, jobs };
+}
+
+async function syncBookingReminderJobs_(bookingId, start_date, start_time){
+  const device_id = getEffectiveDeviceId_();
+  const oldIds = ["0","1","2","3","4"].map(i=>`BK:${bookingId}:${i}`);
+  await postWorker_("/job/deleteMany", { job_ids: oldIds });
+
+  const built = buildBookingJobs_(bookingId, start_date, start_time);
+  if(built.jobs.length){
+    await postWorker_("/job/upsertMany", { device_id, jobs: built.jobs });
+  }
+}
+
+
 function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
@@ -257,13 +361,14 @@ function openDaySheet_(root, dayIso){
 
 function openEditSheet_(root, dayIso, booking){
   const isEdit = !!(booking && booking.id);
-  const b = booking || {
+   const b = booking || {
     id: "",
     type: "room",
     title: "",
     note: "",
     start_date: dayIso,
-    end_date: dayIso
+    end_date: dayIso,
+    start_time: "09:00"
   };
 
   openSheet_(`
@@ -283,6 +388,9 @@ function openEditSheet_(root, dayIso, booking){
 
     <div class="label">Start date</div>
     <input class="input" id="bk_start" type="date" value="${esc_(b.start_date||dayIso)}" />
+
+        <div class="label">Start time</div>
+    <input class="input" id="bk_time" type="time" value="${esc_(b.start_time || "09:00")}" />
 
     <div class="label">End date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
@@ -313,7 +421,7 @@ function openEditSheet_(root, dayIso, booking){
   startEl.addEventListener("change", clampRange_);
   endEl.addEventListener("change", clampRange_);
 
-  document.getElementById("bk_save").addEventListener("click", ()=>{
+    document.getElementById("bk_save").addEventListener("click", async ()=>{
     clampRange_();
 
     const type = document.getElementById("bk_type").value;
@@ -321,6 +429,7 @@ function openEditSheet_(root, dayIso, booking){
     const note = document.getElementById("bk_note").value.trim();
     const start_date = String(startEl.value||"").trim();
     const end_date = String(endEl.value||"").trim();
+        const start_time = String(document.getElementById("bk_time").value || "09:00").trim() || "09:00";
 
     if(!start_date || !end_date){
       alert("Please select start and end date.");
@@ -340,6 +449,7 @@ function openEditSheet_(root, dayIso, booking){
         db.bookings[idx] = {
           ...db.bookings[idx],
           type, title, note, start_date, end_date,
+                    start_time,
           updated_at: store.nowISO()
         };
       }
@@ -351,23 +461,42 @@ function openEditSheet_(root, dayIso, booking){
         note,
         start_date,
         end_date,
+        start_time,
         created_at: store.nowISO(),
         updated_at: store.nowISO()
       });
     }
 
-    store.set(db);
+        store.set(db);
+
+    // 🔔 schedule booking reminders (based on start_date + start_time)
+    try{
+      const bookingId = isEdit ? String(b.id) : String(db.bookings[db.bookings.length-1].id);
+      await syncBookingReminderJobs_(bookingId, start_date, start_time);
+    }catch(e){
+      console.warn("Booking reminder schedule failed", e);
+    }
+
     closeSheet_();
     renderMonth_(root);
   });
 
   if(isEdit){
-    document.getElementById("bk_delete").addEventListener("click", ()=>{
+        document.getElementById("bk_delete").addEventListener("click", async ()=>{
       const ok = confirm("Delete this booking?");
       if(!ok) return;
       const db = store.get();
-      db.bookings = (db.bookings||[]).filter(x=>String(x.id)!==String(b.id));
+          db.bookings = (db.bookings||[]).filter(x=>String(x.id)!==String(b.id));
       store.set(db);
+
+      // 🔔 delete scheduled reminder jobs
+      try{
+        const oldIds = ["0","1","2","3","4"].map(i=>`BK:${String(b.id)}:${i}`);
+        await postWorker_("/job/deleteMany", { job_ids: oldIds });
+      }catch(e){
+        console.warn("Booking jobs delete failed", e);
+      }
+
       closeSheet_();
       renderMonth_(root);
     });
