@@ -489,12 +489,23 @@ function openSheet_(){
   const bd = document.getElementById("settings_sheet");
   if(!bd) return;
   bd.style.display = "flex";
+
+  // ✅ match Calendar sheet behavior (uses .open)
+  bd.classList.add("open");
+  const inner = bd.querySelector(".sheet");
+  if(inner) inner.classList.add("open");
 }
 
 function closeSheet_(){
   const bd = document.getElementById("settings_sheet");
   if(!bd) return;
-  bd.style.display = "none";
+
+  bd.classList.remove("open");
+  const inner = bd.querySelector(".sheet");
+  if(inner) inner.classList.remove("open");
+
+  // small delay so close animation can run
+  setTimeout(()=>{ bd.style.display = "none"; }, 120);
 }
 
 function renderSettingsMenu_(){
@@ -823,6 +834,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
