@@ -611,3 +611,14 @@ hr.sep{
 /* Ensure manage popup is below settings */
 .manageBackdrop{ z-index: 5000; }
 .managePop{ z-index: 5001; }
+
+/* ===========================
+   FAB shift when Manage popup open
+   =========================== */
+body.manageOpen .fab{
+  right: 92px;               /* move left (tweak if you want more/less) */
+  transition: right .18s ease;
+}
+.fab{
+  transition: right .18s ease; /* smooth return */
+}
