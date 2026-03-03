@@ -232,4 +232,9 @@ export function renderFollowups(root){
 
 export function onFabFollowups(root){
   renderForm_(root, null);
+
+}
+
+export function openFollowupById(root, id){
+  renderForm_(root, id);
 }
