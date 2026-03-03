@@ -8,6 +8,7 @@ import { renderFollowups, onFabFollowups } from "./modules/followups.js";
 import { renderContracts, onFabContracts } from "./modules/contracts.js";
 import { renderTerms, onFabTerms } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
+import { renderCalendar, onFabCalendar } from "./modules/calendar.js";
 
 import { renderCompanySettings } from "./modules/company_settings.js";
 
@@ -21,6 +22,65 @@ const subtitle = document.getElementById("app_subtitle");
 const navBtns = Array.from(document.querySelectorAll(".navBtn"));
 const fab = document.getElementById("fab_add");
 
+
+// Manage popup elements (inserted once)
+const manageBackdrop = document.createElement("div");
+manageBackdrop.className = "manageBackdrop";
+manageBackdrop.id = "manage_backdrop";
+
+const managePop = document.createElement("div");
+managePop.className = "managePop";
+managePop.id = "manage_pop";
+
+managePop.innerHTML = `
+  <div class="stack">
+    <div class="manageItem" data-go="company">
+      <button class="manageBtn" type="button" aria-label="Company">🏢</button>
+      <div class="manageLbl">Company</div>
+    </div>
+    <div class="manageItem" data-go="terms">
+      <button class="manageBtn" type="button" aria-label="Terms">📜</button>
+      <div class="manageLbl">Terms</div>
+    </div>
+    <div class="manageItem" data-go="contracts">
+      <button class="manageBtn" type="button" aria-label="Contracts">📄</button>
+      <div class="manageLbl">Contracts</div>
+    </div>
+  </div>
+`;
+
+document.body.appendChild(manageBackdrop);
+document.body.appendChild(managePop);
+
+function closeManage_(){
+  manageBackdrop.classList.remove("open");
+  managePop.classList.remove("open");
+}
+function toggleManage_(){
+  const open = managePop.classList.contains("open");
+  if(open) closeManage_();
+  else{
+    manageBackdrop.classList.add("open");
+    managePop.classList.add("open");
+  }
+}
+
+manageBackdrop.addEventListener("click", closeManage_);
+
+managePop.addEventListener("click", (e)=>{
+  const t = e.target;
+  const item = t && t.closest ? t.closest(".manageItem") : null;
+  if(!item) return;
+  const go = String(item.getAttribute("data-go") || "");
+  if(!go) return;
+  closeManage_();
+  route = go;
+  render_();
+});
+
+
+
+// front page route
 let route = "dashboard";
 
 const SETTINGS_KEY = "hotelcrm_settings_v1";
@@ -170,6 +230,23 @@ function render_(){
     renderFollowups(app);
     fab.style.display = "";
   }
+  else if(route === "calendar"){ 
+	  setSubtitle_("Calendar");
+	  renderCalendar(app);
+	  fab.style.display = ""; 
+  }
+  else if(route === "manage"){
+    setSubtitle_("");
+    fab.style.display = "none";
+    // Open popup and stay on previous screen by jumping back:
+    toggleManage_();
+    route = "dashboard";
+    setActiveNav_(route);
+    return;
+  }
+
+
+	  
   else if(route === "contracts"){
     setSubtitle_("Contracts");
     renderContracts(app);
@@ -193,13 +270,21 @@ function render_(){
 }
 
 navBtns.forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    route = btn.dataset.route;
+  btn.addEventListener("click", (e)=>{
+    const r = String(btn.dataset.route || "");
+    if(r === "manage"){
+      e.preventDefault();
+      toggleManage_();
+      return;
+    }
+    closeManage_();
+    route = r;
     render_();
   });
 });
 
 fab.addEventListener("click", ()=>{
+  if(route === "calendar") return onFabCalendar(app, render_);
   if(route === "leads") return onFabLeads(app, render_);
   if(route === "followups") return onFabFollowups(app, render_);
   if(route === "contracts") return onFabContracts(app, render_);
@@ -724,6 +809,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
