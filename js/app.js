@@ -93,6 +93,8 @@ const DEVICE_KEY = "hotelcrm_device_id_v1";
 
 // --- PUSH (Cloudflare Worker + Web Push) ---
 const PUSH_WORKER_URL = "https://divine-leaf-9062.rebule1.workers.dev";
+// expose for modules (no import cycles)
+window.__HOTELCRM_PUSH_WORKER_URL__ = PUSH_WORKER_URL;
 const VAPID_PUBLIC_KEY = "BM2DoeITan2taeymrRIxKa30inwQ3973ia2cT6GxaGszqpMUMzVasDDwiy_Xv8OdQmE2XYdtVP5JoKBg3mQZw8w";
 
 
@@ -1070,6 +1072,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
