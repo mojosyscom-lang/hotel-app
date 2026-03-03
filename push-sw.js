@@ -16,7 +16,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification && event.notification.data && event.notification.data.url) || "/";
+   const rawUrl = (event.notification && event.notification.data && event.notification.data.url) || "./";
+  // Resolve relative URLs under the app scope (GitHub Pages repo path)
+  const url = new URL(rawUrl, self.registration.scope).toString();
 
   event.waitUntil((async () => {
     const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
