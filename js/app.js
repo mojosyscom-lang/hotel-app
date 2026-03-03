@@ -306,6 +306,7 @@ function normalizeDb_(db){
     leads: Array.isArray(fixed.leads) ? fixed.leads : [],
     followups: Array.isArray(fixed.followups) ? fixed.followups : [],
     contracts: Array.isArray(fixed.contracts) ? fixed.contracts : [],
+    bookings: Array.isArray(fixed.bookings) ? fixed.bookings : [],
     terms: (fixed.terms && typeof fixed.terms === "object")
       ? fixed.terms
       : { text: String(fixed.terms || "") },
@@ -448,6 +449,7 @@ console.log("✅ Restored counts:", {
   leads: saved.leads.length,
   followups: saved.followups.length,
   contracts: saved.contracts.length,
+  bookings: (saved.bookings || []).length,
   terms_len: String(saved.terms && saved.terms.text || "").length
 });
 
@@ -821,6 +823,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
