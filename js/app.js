@@ -55,6 +55,7 @@ document.body.appendChild(managePop);
 function closeManage_(){
   manageBackdrop.classList.remove("open");
   managePop.classList.remove("open");
+  document.body.classList.remove("manageOpen");
 }
 function toggleManage_(){
   const open = managePop.classList.contains("open");
@@ -62,6 +63,7 @@ function toggleManage_(){
   else{
     manageBackdrop.classList.add("open");
     managePop.classList.add("open");
+    document.body.classList.add("manageOpen");
   }
 }
 
@@ -834,6 +836,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
