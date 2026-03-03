@@ -174,4 +174,9 @@ export function renderLeads(root){
 
 export function onFabLeads(root){
   renderForm_(root, null);
+
+}
+
+export function openLeadById(root, id){
+  renderForm_(root, id);
 }
