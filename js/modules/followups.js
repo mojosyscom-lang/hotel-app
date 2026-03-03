@@ -1,5 +1,117 @@
 import { store } from "../storage.js";
 
+const SETTINGS_KEY = "hotelcrm_settings_v1";
+const DEVICE_KEY = "hotelcrm_device_id_v1";
+
+function getDeviceIdLite_(){
+  let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
+  if(!id){
+    id = "dev_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+
+function getEffectiveDeviceId_(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    return String(s.device_id || getDeviceIdLite_()).trim() || getDeviceIdLite_();
+  }catch(e){
+    return getDeviceIdLite_();
+  }
+}
+
+function workerUrl_(){
+  return String(window.__HOTELCRM_PUSH_WORKER_URL__ || "").trim();
+}
+
+async function postWorker_(path, payload){
+  const base = workerUrl_();
+  if(!base) throw new Error("Push Worker URL missing");
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify(payload || {})
+  });
+  const txt = await res.text();
+  let j = null; try{ j = JSON.parse(txt); }catch(e){}
+  if(!res.ok || (j && j.error)) throw new Error((j && j.error) ? j.error : `HTTP ${res.status}: ${txt}`);
+  return j || { ok:true };
+}
+
+function isoAtLocalTime_(dateObj, hh, mm){
+  // dateObj assumed local date; set local hh:mm then return ISO
+  const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), hh, mm, 0, 0);
+  return d.toISOString();
+}
+
+function addMinutes_(iso, mins){
+  const t = Date.parse(iso);
+  if(!isFinite(t)) return iso;
+  return new Date(t + mins*60000).toISOString();
+}
+
+function buildFollowupJobs_(followupId, whenIso){
+  const t = Date.parse(whenIso);
+  if(!isFinite(t)) return { job_ids:[], jobs:[] };
+
+  const when = new Date(t);
+  const day = new Date(when.getFullYear(), when.getMonth(), when.getDate());
+
+  // 1 day before (local)
+  const prev = new Date(day);
+  prev.setDate(prev.getDate() - 1);
+
+  const fireList = [
+    isoAtLocalTime_(prev, 9, 0),
+    isoAtLocalTime_(prev, 14, 0),
+    isoAtLocalTime_(prev, 19, 0),
+    isoAtLocalTime_(day, 9, 0),
+    addMinutes_(whenIso, -60) // 1 hour before exact follow-up time
+  ];
+
+  // Dedup + keep future-ish order (worker will ignore if already past)
+  const seen = new Set();
+  const cleaned = fireList.filter(x=>{
+    const k = String(x||"");
+    if(!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  const job_ids = cleaned.map((fire_at, idx)=> `FU:${followupId}:${idx}`);
+
+  const jobs = cleaned.map((fire_at, idx)=> ({
+    job_id: `FU:${followupId}:${idx}`,
+    fire_at,
+    payload: {
+      title: "Hotel CRM — Follow-up",
+      body: "⏰ Follow-up reminder",
+      url: `/?n=followup&id=${encodeURIComponent(followupId)}`
+    }
+  }));
+
+  return { job_ids, jobs };
+}
+
+async function syncFollowupReminderJobs_(followupId, whenIso){
+  const device_id = getEffectiveDeviceId_();
+
+  // delete old
+  const oldIds = ["0","1","2","3","4"].map(i=>`FU:${followupId}:${i}`);
+  await postWorker_("/job/deleteMany", { job_ids: oldIds });
+
+  // upsert new
+  const built = buildFollowupJobs_(followupId, whenIso);
+  if(built.jobs.length){
+    await postWorker_("/job/upsertMany", { device_id, jobs: built.jobs });
+  }
+}
+
+
+
+
+
 function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
@@ -171,7 +283,7 @@ function renderForm_(root, id){
   `;
 
   root.querySelector("#f_cancel").addEventListener("click", ()=> renderList_(root));
-  root.querySelector("#f_save").addEventListener("click", ()=>{
+    root.querySelector("#f_save").addEventListener("click", async ()=>{
     const lead_id = root.querySelector("#f_lead").value;
     const when_at = fromLocalDTValue_(root.querySelector("#f_when").value);
     const note = root.querySelector("#f_note").value.trim();
@@ -192,6 +304,13 @@ function renderForm_(root, id){
       db2.followups.push(updated);
     }
     store.set(db2);
+    
+       // 🔔 Schedule reminders for this follow-up
+    try{
+      await syncFollowupReminderJobs_(updated.id, updated.when_at);
+    }catch(e){
+      console.warn("Follow-up reminder schedule failed", e);
+    }
     renderList_(root);
   });
 }
@@ -200,15 +319,24 @@ function bindActions_(root){
   root.querySelectorAll(".listItem").forEach(row=>{
     const id = row.getAttribute("data-id");
     row.querySelectorAll("button").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
+      btn.addEventListener("click", async ()=>{
         const act = btn.getAttribute("data-act");
         if(act === "edit") return renderForm_(root, id);
         if(act === "delete"){
           const ok = confirm("Delete this follow-up?");
           if(!ok) return;
           const db = store.get();
-          db.followups = (db.followups||[]).filter(x=>x.id!==id);
+                    db.followups = (db.followups||[]).filter(x=>x.id!==id);
           store.set(db);
+
+          // 🔔 delete scheduled reminder jobs
+          try{
+            const oldIds = ["0","1","2","3","4"].map(i=>`FU:${id}:${i}`);
+            await postWorker_("/job/deleteMany", { job_ids: oldIds });
+          }catch(e){
+            console.warn("Follow-up jobs delete failed", e);
+          }
+
           renderList_(root);
         }
         if(act === "toggle"){
@@ -238,3 +366,4 @@ export function onFabFollowups(root){
 export function openFollowupById(root, id){
   renderForm_(root, id);
 }
+
