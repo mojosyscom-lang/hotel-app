@@ -382,3 +382,8 @@ export function onFabCalendar(root, rerender){
   // FAB on calendar opens "Add booking" for today
   openEditSheet_(root, todayIso_(), null);
 }
+
+
+export function openCalendarDay(root, dayIso){
+  openDaySheet_(root, String(dayIso||"").trim());
+}
