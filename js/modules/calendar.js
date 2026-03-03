@@ -84,7 +84,7 @@ function buildBookingJobs_(bookingId, start_date, start_time){
     payload: {
       title: "Hotel CRM — Booking",
       body: "📅 Booking reminder",
-      url: `/?n=calendar&day=${encodeURIComponent(start_date)}`
+            url: `?n=calendar&day=${encodeURIComponent(start_date)}`
     }
   }));
 
