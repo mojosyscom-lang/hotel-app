@@ -87,7 +87,7 @@ function buildFollowupJobs_(followupId, whenIso){
     payload: {
       title: "Hotel CRM — Follow-up",
       body: "⏰ Follow-up reminder",
-      url: `/?n=followup&id=${encodeURIComponent(followupId)}`
+           url: `?n=followup&id=${encodeURIComponent(followupId)}`
     }
   }));
 
@@ -366,4 +366,5 @@ export function onFabFollowups(root){
 export function openFollowupById(root, id){
   renderForm_(root, id);
 }
+
 
