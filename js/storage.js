@@ -9,18 +9,19 @@ function uid_(){
 function loadDB_(){
   try{
     const raw = localStorage.getItem(KEY);
-    if(!raw) return { leads:[], followups:[], contracts:[], terms:{ text:"" }, company:{} };
+    if(!raw) return { leads:[], followups:[], contracts:[], bookings:[], terms:{ text:"" }, company:{} };
     const db = JSON.parse(raw);
-    return {
+   return {
       leads: Array.isArray(db.leads) ? db.leads : [],
       followups: Array.isArray(db.followups) ? db.followups : [],
       contracts: Array.isArray(db.contracts) ? db.contracts : [],
+      bookings: Array.isArray(db.bookings) ? db.bookings : [],
       terms: (db.terms && typeof db.terms === "object") ? db.terms : { text:"" },
       company: (db.company && typeof db.company === "object") ? db.company : {}
     };
   }catch(e){
     console.warn("DB load failed, resetting", e);
-    return { leads:[], followups:[], contracts:[], terms:{ text:"" }, company:{} };
+    return { leads:[], followups:[], contracts:[], bookings:[], terms:{ text:"" }, company:{} };
   }
 }
 
@@ -37,4 +38,5 @@ export const store = {
   },
   uid: uid_,
   nowISO: nowISO_
+
 };
