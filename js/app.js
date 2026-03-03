@@ -751,7 +751,7 @@ if(dismissed === latest) return;
         position: sticky; top: 0; z-index: 9999;
         background: var(--card);
         border-bottom: 1px solid var(--border);
-        padding: 10px 12px;
+        padding: 80px 12px;
         display: flex;
         gap: 10px;
         align-items: center;
@@ -809,6 +809,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
