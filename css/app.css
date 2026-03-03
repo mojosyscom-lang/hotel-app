@@ -671,6 +671,25 @@ hr.sep{
 .manageBackdrop{ z-index: 5000; }
 .managePop{ z-index: 5001; }
 
+
+
+/* Update modal "installing" state */
+#update_bar.updating{
+  opacity: 0.96;
+}
+#update_bar.updating .small::after{
+  content: " Installing…";
+  opacity: .75;
+}
+#update_bar.updating .btn{
+  opacity: .85;
+  cursor: default;
+}
+
+
+
+
+
 /* ===========================
    FAB shift when Manage popup open
    =========================== */
@@ -681,4 +700,5 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
