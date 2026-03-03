@@ -1,15 +1,13 @@
 import { store } from "./storage.js";
 import { renderHeader, applyBranding } from "./components/header.js";
-
 import { exportImagesBase64 } from "./images_db.js";
 import { renderDashboard } from "./modules/dashboard.js";
-import { renderLeads, onFabLeads } from "./modules/leads.js";
-import { renderFollowups, onFabFollowups } from "./modules/followups.js";
+import { renderLeads, onFabLeads, openLeadById } from "./modules/leads.js";
+import { renderFollowups, onFabFollowups, openFollowupById } from "./modules/followups.js";
 import { renderContracts, onFabContracts } from "./modules/contracts.js";
 import { renderTerms, onFabTerms } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
-import { renderCalendar, onFabCalendar } from "./modules/calendar.js";
-
+import { renderCalendar, onFabCalendar, openCalendarDay } from "./modules/calendar.js";
 import { renderCompanySettings } from "./modules/company_settings.js";
 
 const app = document.getElementById("app");
@@ -93,6 +91,12 @@ let LATEST_VERSION = "0.0.0";  // ✅ loaded from version.json
 
 const DEVICE_KEY = "hotelcrm_device_id_v1";
 
+// --- PUSH (Cloudflare Worker + Web Push) ---
+const PUSH_WORKER_URL = "https://divine-leaf-9062.rebule1.workers.dev";
+const VAPID_PUBLIC_KEY = "BM2DoeITan2taeymrRIxKa30inwQ3973ia2cT6GxaGszqpMUMzVasDDwiy_Xv8OdQmE2XYdtVP5JoKBg3mQZw8w";
+
+
+
 function getDeviceId_(){
   let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
   if(!id){
@@ -102,6 +106,66 @@ function getDeviceId_(){
   }
   return id;
 }
+
+
+
+function urlBase64ToUint8Array_(base64String){
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+async function ensurePushEnabled_(){
+  if(!("serviceWorker" in navigator)) throw new Error("Service Worker not supported");
+  if(!("PushManager" in window)) throw new Error("Push not supported");
+
+  const perm = Notification.permission;
+  if(perm !== "granted"){
+    const res = await Notification.requestPermission();
+    if(res !== "granted") throw new Error("Notification permission not granted");
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array_(VAPID_PUBLIC_KEY)
+    });
+  }
+
+  const s = loadSettings_();
+  const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
+
+  await fetch(`${PUSH_WORKER_URL}/subscribe`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({
+      device_id: deviceId,
+      subscription: sub
+    })
+  });
+
+  return { ok:true, deviceId };
+}
+
+async function sendTestPush_(){
+  const s = loadSettings_();
+  const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
+
+  await fetch(`${PUSH_WORKER_URL}/test`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ device_id: deviceId })
+  });
+}
+
+
+
 
 
 // Default backup endpoint (auto-filled if not saved yet)
@@ -548,8 +612,30 @@ function renderSettingsMenu_(){
 
   const s = loadSettings_();
   const lastIso = localStorage.getItem("hotelcrm_last_backup_at") || "";
+const notif = (typeof Notification !== "undefined") ? Notification.permission : "unsupported";
 
+	
   body.innerHTML = `
+   ${notif !== "granted" ? `
+   <div class="menuItem" data-menu="notifications">
+      <div class="menuLeft">
+        <div class="menuTitle">Enable Notifications</div>
+        <div class="menuSub">Turn on reminders on this device</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+    ` : `
+    <div class="menuItem" data-menu="notifications">
+      <div class="menuLeft">
+        <div class="menuTitle">Notifications</div>
+        <div class="menuSub">Enabled ✅ (send test)</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+    `}
+
+
+   
     <div class="menuItem" data-menu="appearance">
       <div class="menuLeft">
         <div class="menuTitle">Appearance</div>
@@ -692,6 +778,58 @@ function renderBackupSettings_(){
   });
 }
 
+
+
+function renderNotificationsSettings_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return;
+
+  const perm = (typeof Notification !== "undefined") ? Notification.permission : "unsupported";
+  const s = loadSettings_();
+  const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
+
+  body.innerHTML = `
+    <div class="card">
+      <h2>Notifications</h2>
+      <div class="small"><b>Status:</b> ${perm}</div>
+      <div class="small"><b>Device ID:</b> ${deviceId}</div>
+
+      <div class="btnRow" style="margin-top:12px;">
+        <button class="btn" id="btn_back_menu">Back</button>
+        <button class="btn primary" id="btn_enable_push">Enable</button>
+        <button class="btn" id="btn_test_push">Send Test</button>
+      </div>
+
+      <p class="small" style="margin-top:10px;">
+        Enable registers this device for reminders. Test sends a sample push.
+      </p>
+    </div>
+  `;
+
+  document.getElementById("btn_back_menu").addEventListener("click", renderSettingsMenu_);
+
+  document.getElementById("btn_enable_push").addEventListener("click", async ()=>{
+    try{
+      await ensurePushEnabled_();
+      alert("Notifications enabled ✅");
+      renderSettingsMenu_();
+    }catch(e){
+      alert("Enable failed: " + String(e && e.message ? e.message : e));
+    }
+  });
+
+  document.getElementById("btn_test_push").addEventListener("click", async ()=>{
+    try{
+      await sendTestPush_();
+      alert("Test push requested ✅ (check your device)");
+    }catch(e){
+      alert("Test push failed: " + String(e && e.message ? e.message : e));
+    }
+  });
+}
+
+
+
 function renderAbout_(){
   const body = document.getElementById("settings_sheet_body");
   if(!body) return;
@@ -740,6 +878,7 @@ document.addEventListener("click", async (e)=>{
   const item = t && t.closest ? t.closest(".menuItem") : null;
   if(item && item.dataset && item.dataset.menu){
     const key = item.dataset.menu;
+	if(key === "notifications") return renderNotificationsSettings_();  
     if(key === "appearance") return renderAppearanceSettings_();
     if(key === "backup") return renderBackupSettings_();
     if(key === "about") return renderAbout_();
@@ -875,6 +1014,38 @@ await checkForUpdate_();
   // Finally render route UI
   render_();
 
+  // Deep link handling (from push notification click)
+  try{
+    const u = new URL(window.location.href);
+    const n = String(u.searchParams.get("n") || "");
+    const id = String(u.searchParams.get("id") || "");
+    const day = String(u.searchParams.get("day") || "");
+
+    if(n === "leads" && id){
+      route = "leads";
+      render_();
+      openLeadById(app, id);
+    }else if(n === "followup" && id){
+      route = "followups";
+      render_();
+      openFollowupById(app, id);
+    }else if(n === "calendar" && day){
+      route = "calendar";
+      render_();
+      openCalendarDay(app, day);
+    }else if(n === "dashboard"){
+      route = "dashboard";
+      render_();
+    }
+  }catch(e){
+    console.warn("Deep link parse failed", e);
+  }
+
+
+
+
+	
+
 	  // ✅ Background update checks (no refresh needed)
   setInterval(async ()=>{
     await loadLatestVersion_();
@@ -899,6 +1070,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
