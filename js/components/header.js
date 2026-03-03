@@ -75,11 +75,11 @@ export async function applyBranding(){
       const overlay2 = getComputedStyle(document.documentElement)
         .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.92)";
 
-      topbar.style.backgroundImage =
-        `linear-gradient(90deg, ${overlay1} 0%, ${overlay2} 100%)`;
-
+        // Keep CSS gradient background (do NOT force blank)
+      topbar.style.backgroundImage = "";
       topbar.style.backgroundSize = "";
       topbar.style.backgroundPosition = "";
     }
   }
 }
+
