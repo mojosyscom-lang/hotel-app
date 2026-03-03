@@ -153,11 +153,43 @@ function applyTheme_(){
   }
 }
 
+// backup issues solved
+
+function isDbEmpty_(db){
+  const d = db || {};
+  const leads0 = !Array.isArray(d.leads) || d.leads.length === 0;
+  const follow0 = !Array.isArray(d.followups) || d.followups.length === 0;
+  const cont0 = !Array.isArray(d.contracts) || d.contracts.length === 0;
+  const book0 = !Array.isArray(d.bookings) || d.bookings.length === 0;
+
+  const termsText = (d.terms && typeof d.terms === "object") ? String(d.terms.text || "") : String(d.terms || "");
+  const terms0 = termsText.trim().length === 0;
+
+  const comp = (d.company && typeof d.company === "object") ? d.company : {};
+  const compKeys = Object.keys(comp || {});
+  const comp0 = compKeys.length === 0;
+
+  return (leads0 && follow0 && cont0 && book0 && terms0 && comp0);
+}
+
+
+
+
+
 async function backupOncePerDayOnOpen_(){
   const s = loadSettings_();
   const endpoint = String(s.backup_endpoint || "").trim();
  // Token will be inside endpoint URL as ?token=YOURTOKEN (recommended for Apps Script)
 if(!endpoint) return; // not configured
+
+  // ✅ Safety: never auto-backup an empty fresh install (prevents overwriting Drive backup)
+  const db0 = store.get();
+  if(isDbEmpty_(db0)){
+    console.log("ℹ️ Auto-backup skipped: local DB is empty (restore first).");
+    return;
+  }
+
+	
 
   const today = new Date();
   const y = today.getFullYear();
@@ -783,6 +815,10 @@ box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 border-radius: 8px;
 max-width: 90%;
 min-width: 300px;
+
+
+
+
       `;
       bar.innerHTML = `
         <div class="small"><b>New Version available</b> (v${latest})...</div>
@@ -790,15 +826,25 @@ min-width: 300px;
       `;
       document.body.prepend(bar);
 
-      bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
-        // one tap update for your friend
-        localStorage.setItem("hotelcrm_dismissed_update", latest);
+    bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
+  // one tap update for your friend
+  localStorage.setItem("hotelcrm_dismissed_update", latest);
 
-// Force reload with cache-bust query so iPhone actually loads new files
-const u = new URL(window.location.href);
-u.searchParams.set("r", Date.now().toString());
-window.location.replace(u.toString());
-      });
+  const btn = bar.querySelector("#btn_reload_update");
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "Updating…";
+  }
+
+  // show a tiny “installing” feel
+  bar.classList.add("updating");
+
+  setTimeout(()=>{
+    const u = new URL(window.location.href);
+    u.searchParams.set("r", Date.now().toString());
+    window.location.replace(u.toString());
+  }, 2200);
+});
     }
   }catch(e){
     // ignore update errors
@@ -828,6 +874,23 @@ await checkForUpdate_();
 
   // Finally render route UI
   render_();
+
+	  // ✅ Background update checks (no refresh needed)
+  setInterval(async ()=>{
+    await loadLatestVersion_();
+    await checkForUpdate_();
+  }, 30000); // every 30s
+
+  document.addEventListener("visibilitychange", async ()=>{
+    if(document.visibilityState === "visible"){
+      await loadLatestVersion_();
+      await checkForUpdate_();
+    }
+  });
+
+
+
+	
 }
 
 if (document.readyState === "loading") {
@@ -836,6 +899,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
