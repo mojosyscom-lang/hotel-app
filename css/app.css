@@ -576,3 +576,38 @@ hr.sep{
 }
 
 
+
+
+/* ===========================
+   SETTINGS SHEET (FIX)
+   =========================== */
+#settings_sheet{
+  position: fixed;
+  inset: 0;
+  z-index: 9998; /* above manage */
+  display: none; /* app.js toggles this */
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+}
+
+#settings_sheet .sheet{
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  box-shadow: var(--shadow);
+  padding: 12px 12px calc(env(safe-area-inset-bottom) + 14px) 12px;
+  transform: translateY(14px);
+}
+
+/* optional: slight "open" feel */
+#settings_sheet.open .sheet{
+  transform: translateY(0);
+}
+
+/* Ensure manage popup is below settings */
+.manageBackdrop{ z-index: 5000; }
+.managePop{ z-index: 5001; }
