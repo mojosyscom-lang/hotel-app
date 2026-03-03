@@ -65,6 +65,13 @@ body{
   border-bottom: 1px solid var(--border);
     /* prevent iOS “jiggle” feeling */
   transform: translateZ(0);
+
+     background: linear-gradient(
+    90deg,
+    var(--header-overlay-1, rgba(11,58,42,.86)) 0%,
+    var(--header-overlay-2, rgba(15,90,64,.86)) 100%
+  );
+  background-color: var(--meta-theme, #0b3a2a);
 }
 
 .brand{
@@ -531,7 +538,59 @@ hr.sep{
   background: rgba(255,255,255,.06);
 }
 
+
+
+/* ===========================
+   Calendar Day Sheet (ID scoped, no conflicts)
+   =========================== */
+#cal_sheet_backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  display: none;
+  z-index: 80;
+}
+#cal_sheet_backdrop.open{ display:block; }
+
+#cal_sheet{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  transform: translateY(110%);
+  transition: transform .22s ease;
+}
+#cal_sheet.open{ transform: translateY(0); }
+
+#cal_sheet .sheetTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+#cal_sheet .sheetTitle{ font-weight: 900; }
+#cal_sheet .sheetClose{
+  border:1px solid var(--border);
+  background: transparent;
+  border-radius: 14px;
+  padding: 8px 10px;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+
+
 /* bottom sheet for day details */
+
+/* 
+
+// the culprit if something goes wrong
 .sheetBackdrop{
   position: fixed;
   inset: 0;
@@ -574,7 +633,7 @@ hr.sep{
   font-weight: 900;
   color: var(--muted);
 }
-
+*/
 
 
 
@@ -622,3 +681,4 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
