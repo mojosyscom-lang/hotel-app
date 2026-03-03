@@ -748,14 +748,26 @@ if(dismissed === latest) return;
       bar = document.createElement("div");
       bar.id = "update_bar";
       bar.style.cssText = `
-        position: sticky; top: 0; z-index: 9999;
-        background: var(--card);
-        border-bottom: 1px solid var(--border);
-        padding: 80px 12px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        justify-content: space-between;
+       /* New Pop-up Styles */
+position: fixed;         /* Fixes it relative to the browser window */
+top: 50%;                /* Moves the top edge to the middle */
+left: 50%;               /* Moves the left edge to the middle */
+transform: translate(-50%, -50%); /* Pulls the element back by half its own width/height */
+
+z-index: 9999;
+background: var(--card);
+border: 1px solid var(--border); /* Changed from border-bottom to a full border */
+padding: 40px 24px;      /* Adjusted padding for a balanced modal look */
+display: flex;
+gap: 10px;
+align-items: center;
+justify-content: space-between;
+
+/* Optional: Add depth and constraints */
+box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+border-radius: 8px;
+max-width: 90%;
+min-width: 300px;
       `;
       bar.innerHTML = `
         <div class="small"><b>New Version available</b> (v${latest})...</div>
@@ -809,6 +821,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
