@@ -15,9 +15,22 @@ html, body {
 
 :root{
     /* Dashboard chart colors */
-  --bar1: var(--brand);
-  --bar2: var(--brand2);
+  --bar1: #ff4d4d;;
+  --bar2: #4caf50;
   --bar3: #ffb020;
+
+      /* Dashboard chart colors the old ones */
+/*  --bar1: var(--brand); */
+/*  --bar2: var(--brand2); */
+/*  --bar3: #ffb020; */
+   
+
+     /* Calendar / Dashboard booking colors */
+  --cal-room: #2f80ff;
+  --cal-event: #ff8a2f;
+
+
+   
   /* layout tokens (safe defaults if a design file fails to load) */
   --bg: #f6f8fb;
   --card: #ffffff;
@@ -700,5 +713,6 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
