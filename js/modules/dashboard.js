@@ -17,7 +17,14 @@ function barSvg_(items){
     const v = n_(it.value);
     const h = Math.round((v/max) * innerH);
     const y = padT + (innerH - h);
-    const colorVar = (it.label === "Leads") ? "var(--bar1)" : (it.label === "Follow") ? "var(--bar2)" : "var(--bar3)";
+    const colorVar =
+      (it.label === "Leads") ? "var(--bar1)" :
+      (it.label === "Follow") ? "var(--bar2)" :
+      (it.label === "Contracts") ? "var(--bar3)" :
+      (it.label === "Room") ? "var(--cal-room)" :
+      (it.label === "Event") ? "var(--cal-event)" :
+      "var(--bar3)";
+    
     const rect = `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="10" ry="10" fill="${colorVar}"></rect>`;
     const lbl = `<text x="${x + bw/2}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${it.label}</text>`;
     const val = `<text x="${x + bw/2}" y="${y-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${v}</text>`;
@@ -42,16 +49,22 @@ export function renderDashboard(root){
   const followups = Array.isArray(db.followups) ? db.followups.length : 0;
   const contracts = Array.isArray(db.contracts) ? db.contracts.length : 0;
 
+  const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
+  const roomCount = bookingsArr.filter(b => String(b && b.type || "room") !== "event").length;
+  const eventCount = bookingsArr.filter(b => String(b && b.type || "") === "event").length;
+
   const termsLen = String((db.terms && db.terms.text) ? db.terms.text : "").trim().length;
   const termsDone = termsLen > 0 ? "Yes" : "No";
 
   const companyName = String((db.company && db.company.company_name) ? db.company.company_name : "").trim();
   const companyDone = companyName ? "Yes" : "No";
 
-  const items = [
+    const items = [
     { label:"Leads", value: leads },
     { label:"Follow", value: followups },
-    { label:"Contracts", value: contracts }
+    { label:"Contracts", value: contracts },
+    { label:"Room", value: roomCount },
+    { label:"Event", value: eventCount }
   ];
 
   root.innerHTML = `
@@ -73,6 +86,19 @@ export function renderDashboard(root){
         </div>
       </div>
 
+
+       <div class="row" style="margin-top:10px;">
+        <div class="card" style="margin:0;">
+          <div class="small">Bookings (Room)</div>
+          <div style="font-size:26px; font-weight:900; margin-top:4px; color: var(--cal-room);">${roomCount}</div>
+        </div>
+        
+         <div class="card" style="margin:0;">
+          <div class="small">Bookings (Event)</div>
+          <div style="font-size:26px; font-weight:900; margin-top:4px; color: var(--cal-event);">${eventCount}</div>
+        </div>
+      </div>
+
       <div class="row" style="margin-top:10px;">
         <div class="card" style="margin:0;">
           <div class="small">Contracts</div>
@@ -89,7 +115,7 @@ export function renderDashboard(root){
 
     <div class="card">
       <h2 style="font-size:16px; margin-top:0;">Graph</h2>
-      <p class="small" style="margin-bottom:10px;">Leads / Follow-ups / Contracts</p>
+            <p class="small" style="margin-bottom:10px;">Leads / Follow-ups / Contracts / Room / Event</p>
       ${barSvg_(items)}
     </div>
   `;
