@@ -935,37 +935,47 @@ if(dismissed === latest) return;
     if(!bar){
       bar = document.createElement("div");
       bar.id = "update_bar";
-      bar.style.cssText = `
-       /* New Pop-up Styles */
-position: fixed;         /* Fixes it relative to the browser window */
-top: 50%;                /* Moves the top edge to the middle */
-left: 50%;               /* Moves the left edge to the middle */
-transform: translate(-50%, -50%); /* Pulls the element back by half its own width/height */
+     bar.style.cssText = `
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
 
-z-index: 9999;
-background: var(--card);
-border: 1px solid var(--border); /* Changed from border-bottom to a full border */
-padding: 40px 24px;      /* Adjusted padding for a balanced modal look */
-display: flex;
-gap: 10px;
-align-items: center;
-justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  border-radius: 10px;
 
-/* Optional: Add depth and constraints */
-box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-border-radius: 8px;
-max-width: 90%;
-min-width: 300px;
+  /* ✅ mobile-safe sizing */
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 
+  /* ✅ stack content so button never gets pushed out */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
 
-
-
-      `;
+  padding: 18px 16px;
+`;
       bar.innerHTML = `
-        <div class="small"><b>New Version available</b> (v${latest})...</div>
-        <button class="btn" id="btn_reload_update">Update</button>
-      `;
+  <div class="small"><b>New Version available</b> (v${latest})</div>
+  <button class="btn primary" id="btn_reload_update" type="button" style="width:100%;">Update</button>
+  <button class="btn" id="btn_dismiss_update" type="button" style="width:100%;">Later</button>
+`;
       document.body.prepend(bar);
+
+		const laterBtn = bar.querySelector("#btn_dismiss_update");
+if(laterBtn){
+  laterBtn.addEventListener("click", ()=>{
+    // dismiss only for this exact version
+    localStorage.setItem("hotelcrm_dismissed_update", latest);
+    bar.remove();
+  });
+}
 
     bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
   // one tap update for your friend
@@ -1072,6 +1082,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
