@@ -1002,6 +1002,36 @@ if(laterBtn){
   }
 }
 async function init_(){
+
+  // ✅ PWA Service Worker
+  try{
+    if("serviceWorker" in navigator){
+      const reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+
+      // If a new SW is waiting, activate it immediately
+      if(reg.waiting){
+        reg.waiting.postMessage({ type:"SKIP_WAITING" });
+      }
+
+      reg.addEventListener("updatefound", ()=>{
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener("statechange", ()=>{
+          if(nw.state === "installed" && navigator.serviceWorker.controller){
+            console.log("✅ New version installed (SW). Refresh to update.");
+          }
+        });
+      });
+    }
+  }catch(e){
+    console.warn("SW register failed", e);
+  }
+
+
+
+
+
+	
   applyTheme_();
 	await loadLatestVersion_();
 await checkForUpdate_();
@@ -1082,6 +1112,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
