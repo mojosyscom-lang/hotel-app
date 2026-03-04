@@ -91,6 +91,26 @@ let LATEST_VERSION = "0.0.0";  // ✅ loaded from version.json
 
 const DEVICE_KEY = "hotelcrm_device_id_v1";
 
+// --- PWA INSTALL SUPPORT ---
+let deferredInstallPrompt = null;
+let canInstallPwa = false;
+
+window.addEventListener("beforeinstallprompt", (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  canInstallPwa = true;
+});
+
+window.addEventListener("appinstalled", ()=>{
+  console.log("📱 Hotel CRM installed");
+  deferredInstallPrompt = null;
+  canInstallPwa = false;
+
+  // hide install popup if visible
+  const p = document.getElementById("pwa_install_popup");
+  if(p) p.remove();
+});
+
 // --- PUSH (Cloudflare Worker + Web Push) ---
 const PUSH_WORKER_URL = "https://divine-leaf-9062.rebule1.workers.dev";
 // expose for modules (no import cycles)
@@ -669,6 +689,16 @@ const notif = (typeof Notification !== "undefined") ? Notification.permission : 
 
 	
   body.innerHTML = `
+${canInstallPwa ? `
+<div class="menuItem" data-menu="install">
+  <div class="menuLeft">
+    <div class="menuTitle">Install App</div>
+    <div class="menuSub">Install Hotel CRM on this device. Backup now before you install.</div>
+  </div>
+  <div class="menuArrow">›</div>
+</div>
+` : ``}
+  
    ${notif !== "granted" ? `
    <div class="menuItem" data-menu="notifications">
       <div class="menuLeft">
@@ -931,6 +961,32 @@ document.addEventListener("click", async (e)=>{
   const item = t && t.closest ? t.closest(".menuItem") : null;
   if(item && item.dataset && item.dataset.menu){
     const key = item.dataset.menu;
+	  if(key === "install"){
+  if(!deferredInstallPrompt){
+    alert("Install not available on this device/browser.");
+    return;
+  }
+
+  try{
+    deferredInstallPrompt.prompt();
+
+    const res = await deferredInstallPrompt.userChoice;
+
+    if(res && res.outcome === "accepted"){
+      console.log("✅ PWA installed");
+    }
+
+    deferredInstallPrompt = null;
+    canInstallPwa = false;
+
+    renderSettingsMenu_();
+
+  }catch(e){
+    console.warn("Install failed", e);
+  }
+
+  return;
+}
 	if(key === "notifications") return renderNotificationsSettings_();  
     if(key === "appearance") return renderAppearanceSettings_();
     if(key === "backup") return renderBackupSettings_();
@@ -1163,6 +1219,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
