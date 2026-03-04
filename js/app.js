@@ -99,14 +99,46 @@ const VAPID_PUBLIC_KEY = "BM2DoeITan2taeymrRIxKa30inwQ3973ia2cT6GxaGszqpMUMzVasD
 
 
 
-function getDeviceId_(){
-  let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
-  if(!id){
-    // Generate a stable ID for this device/browser
-    id = "dev_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
-    localStorage.setItem(DEVICE_KEY, id);
+// small stable hash (FNV-1a 32-bit)
+function hash32_(str){
+  let h = 0x811c9dc5;
+  const s = String(str || "");
+  for(let i=0;i<s.length;i++){
+    h ^= s.charCodeAt(i);
+    h = (h + ((h<<1) + (h<<4) + (h<<7) + (h<<8) + (h<<24))) >>> 0;
   }
+  return ("00000000" + h.toString(16)).slice(-8);
+}
+
+function stableDeviceId_(){
+  // “stable per phone+browser profile”
+  const parts = [
+    navigator.userAgent || "",
+    navigator.platform || "",
+    navigator.language || "",
+    String((Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || ""),
+    String(screen && screen.width || ""),
+    String(screen && screen.height || ""),
+    String(window.devicePixelRatio || "")
+  ];
+  const raw = "hotelcrm|stable|v1|" + parts.join("|");
+  return "fp_" + hash32_(raw);
+}
+
+function getDeviceId_(){
+  // ✅ If old random ID exists, keep it (preserves existing backups)
+  let id = String(localStorage.getItem(DEVICE_KEY) || "").trim();
+  if(id) return id;
+
+  // ✅ After reinstall (empty storage) we get stable id
+  id = stableDeviceId_();
+  localStorage.setItem(DEVICE_KEY, id);
   return id;
+}
+
+// helper if you want to send both
+function getStableDeviceId_(){
+  return stableDeviceId_();
 }
 
 
@@ -269,12 +301,15 @@ if(!endpoint) return; // not configured
  const images = await exportImagesBase64(["company_logo","company_bg","company_qr"]);
 
 const s2 = loadSettings_();
-const deviceId = String(s2.device_id || getDeviceId_()).trim() || "default";
+const legacyId = String(s2.device_id || getDeviceId_()).trim() || "default";
+const stableId = String(getStableDeviceId_()).trim() || legacyId;
 
 const payload = {
   app: "hotelcrm",
   ts: new Date().toISOString(),
-  device_id: deviceId,
+  device_id: legacyId,              // keep existing behavior
+device_id_stable: stableId,       // NEW (for reinstall restore)
+device_id_legacy: legacyId,       // NEW (explicit)
   data: store.get(),
   settings: s2,
   images: {
@@ -496,25 +531,41 @@ async function restoreFromBackup_(){
   // We will call the same endpoint but with ?action=get
   // Keep token in URL already.
  const s2 = loadSettings_();
-const deviceId = String(s2.device_id || getDeviceId_()).trim() || "default";
+const legacyId = String(s2.device_id || getDeviceId_()).trim() || "default";
+const stableId = String(getStableDeviceId_()).trim() || legacyId;
 
-const url = endpoint.includes("?")
-  ? (endpoint + `&action=get&device_id=${encodeURIComponent(deviceId)}`)
-  : (endpoint + `?action=get&device_id=${encodeURIComponent(deviceId)}`);
-
- let payload;
-try{
-  payload = await jsonp_(url);
-}catch(err){
-  console.warn("Restore JSONP error", err);
-  alert("Restore failed (could not load backup). Check console.");
-  return;
+// ✅ helper to build URL for any id
+function buildGetUrl_(id){
+  return endpoint.includes("?")
+    ? (endpoint + `&action=get&device_id=${encodeURIComponent(id)}`)
+    : (endpoint + `?action=get&device_id=${encodeURIComponent(id)}`);
 }
 
-  if(!payload || payload.error){
-    alert("Restore error: " + (payload && payload.error ? payload.error : "Unknown"));
+let payload = null;
+
+// ✅ Try STABLE first
+try{
+  payload = await jsonp_(buildGetUrl_(stableId));
+}catch(err){
+  console.warn("Restore JSONP error (stable)", err);
+}
+
+// ✅ If stable missing, try LEGACY
+if(!payload || payload.error){
+  try{
+    payload = await jsonp_(buildGetUrl_(legacyId));
+  }catch(err2){
+    console.warn("Restore JSONP error (legacy)", err2);
+    alert("Restore failed (could not load backup). Check console.");
     return;
   }
+}
+
+// ✅ Still error? stop.
+if(!payload || payload.error){
+  alert("Restore error: " + (payload && payload.error ? payload.error : "Unknown"));
+  return;
+}
 
  const dataRaw = payload.data || {};
 const images = payload.images || {};
@@ -1112,6 +1163,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
