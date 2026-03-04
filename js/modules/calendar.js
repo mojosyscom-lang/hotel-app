@@ -442,13 +442,14 @@ function openEditSheet_(root, dayIso, booking){
   };
 
   openSheet_(`
-    <div class="sheetTop">
+    <div class="sheetTop" style="position:sticky; top:0; z-index:5; background:#fff;">
       <div class="sheetTitle">${isEdit ? "Edit" : "Add"} Booking</div>
       <button class="sheetClose" id="cal_close2" type="button">Close</button>
     </div>
 
-        <div class="label">Type</div>
-    <select class="select" id="bk_type">
+    <div id="bk_scroll" style="max-height:calc(80vh - 64px); overflow:auto; -webkit-overflow-scrolling:touch; padding-bottom:16px;">
+      <div class="label">Type</div>
+      <select class="select" id="bk_type">
       <option value="room" ${String(b.type)==="room"?"selected":""}>Room</option>
       <option value="event" ${String(b.type)==="event"?"selected":""}>Event</option>
     </select>
@@ -489,6 +490,7 @@ function openEditSheet_(root, dayIso, booking){
     </div>
 
     <p class="small" style="margin-top:10px;">Multi-day booking will appear on every day in the date range.</p>
+    </div>
   `);
 
   document.getElementById("cal_close2").addEventListener("click", closeSheet_);
