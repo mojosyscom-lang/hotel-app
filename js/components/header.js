@@ -17,7 +17,7 @@ export function renderHeader(){
         </div>
       </div>
       <button class="iconBtn" id="btn_settings" title="Settings" aria-label="Settings">⚙️</button>
-      <button id="btn_install_app" style="display:none;">Install App</button>
+      
     </div>
   `;
 }
@@ -83,5 +83,6 @@ export async function applyBranding(){
     }
   }
 }
+
 
 
