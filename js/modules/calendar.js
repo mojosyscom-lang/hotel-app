@@ -114,6 +114,41 @@ function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
 
+
+function toLocalDTValue_(iso){
+  // ISO -> "YYYY-MM-DDTHH:mm" (local)
+  if(!iso) return "";
+  const d = new Date(iso);
+  const pad = (n)=> String(n).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth()+1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function fromLocalDTValue_(val){
+  // "YYYY-MM-DDTHH:mm" (local) -> ISO
+  if(!val) return "";
+  const d = new Date(val);
+  return d.toISOString();
+}
+
+function bookingIsoFromParts_(start_date, start_time){
+  // start_date: YYYY-MM-DD, start_time: HH:mm => ISO
+  if(!start_date) return "";
+  const t = String(start_time||"09:00").trim() || "09:00";
+  const [hh, mm] = t.split(":").map(x=>parseInt(x,10));
+  const dt = parseIso_(start_date);
+  if(!dt) return "";
+  const d2 = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), isFinite(hh)?hh:9, isFinite(mm)?mm:0, 0, 0);
+  return d2.toISOString();
+}
+
+
+
+
 function pad2_(n){ return String(n).padStart(2,"0"); }
 
 function isoDate_(d){
@@ -341,6 +376,7 @@ function openDaySheet_(root, dayIso){
     const range = `${esc_(b.start_date)} → ${esc_(b.end_date)}`;
 
     const roomNo = String(b.room_no || "").trim();
+         const rate = String(b.rate || "").trim();
     const booker = String(b.booker_name || "").trim();
     const phone = String(b.contact_number || "").trim();
 
@@ -349,9 +385,9 @@ function openDaySheet_(root, dayIso){
       ? roomNo.split(",").map(x=>x.trim()).filter(Boolean).join(", ")
       : "";
 
-    const typeLabel = (type === "event")
+        const typeLabel = (type === "event")
       ? "Event"
-      : (`Room${roomPretty ? " • " + esc_(roomPretty) : ""}`);
+      : (`Room${roomPretty ? " • " + esc_(roomPretty) : ""}${rate ? " • Rate: ₹" + esc_(rate) : ""}`);
 
     const who = (booker || phone)
       ? `${booker ? esc_(booker) : "-"}${phone ? " • " + esc_(phone) : ""}`
@@ -433,6 +469,7 @@ function openEditSheet_(root, dayIso, booking){
     type: "room",
     title: "",          // will now be "Company name"
     room_no: "",
+     rate: "",
     booker_name: "",
     contact_number: "",
     note: "",
@@ -457,19 +494,28 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">Company name</div>
     <input class="input" id="bk_title" value="${esc_(b.title||"")}" placeholder="Hotel / Company name" />
 
-      <div class="label">Start date</div>
-    <input class="input" id="bk_start" type="date" value="${esc_(b.start_date||dayIso)}" />
-
-        <div class="label">Start time</div>
-    <input class="input" id="bk_time" type="time" value="${esc_(b.start_time || "09:00")}" />
+            <div class="label">Start date/time</div>
+      <input class="input" id="bk_start_dt" type="datetime-local" value="${esc_(toLocalDTValue_(bookingIsoFromParts_(b.start_date||dayIso, b.start_time||"09:00")))}" />
 
     <div class="label">End date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
-    <div id="bk_room_wrap">
-      <div class="label">Room No</div>
-      
-      <input class="input" id="bk_room_no" value="${esc_(b.room_no||"")}" placeholder="Room numbers (e.g. 101,102,103)" inputmode="numeric" />
+       <div id="bk_room_wrap">
+      <div class="label">Room + Rate</div>
+
+      <!-- Visible room input: phone keypad (no commas needed) -->
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
+        <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
+        <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
+      </div>
+
+      <!-- Hidden comma string (keeps your existing logic working) -->
+      <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
+
+      <!-- Chips preview -->
+      <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+
       <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
     </div>
 
@@ -495,14 +541,18 @@ function openEditSheet_(root, dayIso, booking){
 
   document.getElementById("cal_close2").addEventListener("click", closeSheet_);
 
-  const startEl = document.getElementById("bk_start");
+  const startDtEl = document.getElementById("bk_start_dt");
   const endEl = document.getElementById("bk_end");
 
 const typeEl = document.getElementById("bk_type");
 const roomWrap = document.getElementById("bk_room_wrap");
-const roomEl = document.getElementById("bk_room_no");
+const roomEl = document.getElementById("bk_room_no"); // hidden comma-string
+const roomOneEl = document.getElementById("bk_room_one"); // visible (tel keypad)
+const roomAddEl = document.getElementById("bk_room_add");
+const chipsEl = document.getElementById("bk_room_chips");
+const rateEl = document.getElementById("bk_rate");
 const phoneEl = document.getElementById("bk_phone");
-  const roomStatusEl = document.getElementById("bk_room_status");
+const roomStatusEl = document.getElementById("bk_room_status");
 
 /* -------------------------
    Room type toggle
@@ -614,38 +664,87 @@ syncRoomUi_();
   syncRoomAvailabilityUi_();
 
 /* -------------------------
-   Room numbers input
-   allows: 101,102,103
+   Room numbers (phone keypad)
+   - user types ONE room (digits only) then presses Add
+   - we store comma-string in hidden #bk_room_no (so your conflict logic stays same)
 ------------------------- */
-if(roomEl){
-  roomEl.addEventListener("input", ()=>{
-    let v = String(roomEl.value || "");
 
-    v = v.replace(/[^\d,]/g, "");   // allow digits + comma
-    v = v.replace(/,{2,}/g, ",");   // collapse multiple commas
-    v = v.replace(/^,|,$/g, "");    // trim comma start/end
+function getRoomsList_(){
+  const raw = String(roomEl?.value || "");
+  return raw.split(",").map(x=>x.trim()).filter(Boolean);
+}
+function setRoomsList_(arr){
+  const cleaned = (arr||[]).map(x=>String(x||"").trim()).filter(Boolean);
+  // unique
+  const seen = new Set();
+  const uniq = cleaned.filter(x=> (seen.has(x)?false:(seen.add(x),true)));
+  if(roomEl) roomEl.value = uniq.join(",");
+  paintChips_();
+  syncRoomAvailabilityUi_();
+}
+function paintChips_(){
+  if(!chipsEl) return;
+  const rooms = getRoomsList_();
+  if(!rooms.length){
+    chipsEl.innerHTML = `<span class="small" style="color:#888;">No rooms added yet.</span>`;
+    return;
+  }
+  chipsEl.innerHTML = rooms.map(rn=>`
+    <button type="button" class="btn" data-chip-room="${esc_(rn)}" style="padding:6px 10px;">
+      ${esc_(rn)} ✕
+    </button>
+  `).join("");
+}
 
-    roomEl.value = v;
+function addRoom_(rn){
+  rn = String(rn||"").replace(/\D/g,""); // digits only
+  if(!rn) return;
+  const rooms = getRoomsList_();
+  if(!rooms.includes(rn)) rooms.push(rn);
+  setRoomsList_(rooms);
+  if(roomOneEl) roomOneEl.value = "";
+}
 
-    // live availability check
-    syncRoomAvailabilityUi_();
+function removeRoom_(rn){
+  rn = String(rn||"").trim();
+  const rooms = getRoomsList_().filter(x=>x !== rn);
+  setRoomsList_(rooms);
+}
+
+if(roomOneEl){
+  roomOneEl.addEventListener("input", ()=>{
+    // digits only, like phone keypad
+    roomOneEl.value = String(roomOneEl.value||"").replace(/\D/g,"").slice(0,6);
   });
 }
 
-  // Click suggestion → append room number
+if(roomAddEl){
+  roomAddEl.addEventListener("click", ()=>{
+    addRoom_(String(roomOneEl?.value||""));
+  });
+}
+
+if(chipsEl){
+  chipsEl.addEventListener("click", (e)=>{
+    const btn = e.target && e.target.closest ? e.target.closest("[data-chip-room]") : null;
+    if(!btn) return;
+    const rn = String(btn.getAttribute("data-chip-room")||"").trim();
+    if(rn) removeRoom_(rn);
+  });
+}
+
+// initial paint (edit mode will already have b.room_no in hidden input)
+paintChips_();
+syncRoomAvailabilityUi_();
+
+// Click suggestion → add room
 if(roomStatusEl){
   roomStatusEl.addEventListener("click", (e)=>{
     const btn = e.target && e.target.closest ? e.target.closest("[data-sug-room]") : null;
     if(!btn) return;
     const rn = String(btn.getAttribute("data-sug-room") || "").trim();
-    if(!rn || !roomEl) return;
-
-    const current = String(roomEl.value || "").trim();
-    const parts = current ? current.split(",").map(x=>x.trim()).filter(Boolean) : [];
-    if(!parts.includes(rn)) parts.push(rn);
-
-    roomEl.value = parts.join(",");
-    syncRoomAvailabilityUi_();
+    if(!rn) return;
+    addRoom_(rn);
   });
 }
 
@@ -663,32 +762,37 @@ if(phoneEl){
 }
   
 
- function clampRange_(){
-  const s = String(startEl.value||"");
-  const e = String(endEl.value||"");
-  if(s && e && e < s){
-    endEl.value = s;
+function clampRange_(){
+  const iso = fromLocalDTValue_(String(startDtEl?.value || ""));
+  const d = iso ? toLocalDTValue_(iso).slice(0,10) : ""; // YYYY-MM-DD
+  const e = String(endEl?.value || "");
+  if(d && e && e < d){
+    endEl.value = d;
   }
   syncRoomAvailabilityUi_();
 }
-startEl.addEventListener("change", clampRange_);
-endEl.addEventListener("change", clampRange_);
+if(startDtEl) startDtEl.addEventListener("change", clampRange_);
+if(endEl) endEl.addEventListener("change", clampRange_);
 
     document.getElementById("bk_save").addEventListener("click", async ()=>{
     clampRange_();
 
       const type = document.getElementById("bk_type").value;
     const title = document.getElementById("bk_title").value.trim(); // Company name
-    const room_no = String((document.getElementById("bk_room_no")?.value||"")).trim();
+        const room_no = String(roomEl?.value || "").trim();
     const booker_name = String((document.getElementById("bk_booker")?.value||"")).trim();
     const contact_number = String((document.getElementById("bk_phone")?.value||"")).replace(/\D/g,"").slice(0,10);
     const note = document.getElementById("bk_note").value.trim();
-    const start_date = String(startEl.value||"").trim();
-    const end_date = String(endEl.value||"").trim();
-        const start_time = String(document.getElementById("bk_time").value || "09:00").trim() || "09:00";
+        const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
+    const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
+    const start_time = startIso ? toLocalDTValue_(startIso).slice(11,16) : "09:00";
 
-    if(!start_date || !end_date){
-      alert("Please select start and end date.");
+    const end_date = String(endEl.value||"").trim();
+
+    const rate = String(rateEl?.value || "").trim();
+
+       if(!start_date || !end_date){
+      alert("Please select start date/time and end date.");
       return;
     }
     if(end_date < start_date){
@@ -748,7 +852,7 @@ endEl.addEventListener("change", clampRange_);
       if(idx >= 0){
         db.bookings[idx] = {
           ...db.bookings[idx],
-          type, title, room_no, booker_name, contact_number,
+          type, title, room_no, rate, booker_name, contact_number,
           note, start_date, end_date,
                     start_time,
           updated_at: store.nowISO()
@@ -760,6 +864,7 @@ endEl.addEventListener("change", clampRange_);
         type,
         title,
         room_no,
+        rate,
         booker_name,
         contact_number,
         note,
