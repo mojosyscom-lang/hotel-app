@@ -500,38 +500,20 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">End date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
-       <div id="bk_room_wrap">
-      <div class="label">Multiple Rooms + Rate/room </div>
-
-            <div style="display:flex; gap:10px; align-items:center;">
-        <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
+       <div class="label" id="bk_room_label">Multiple Rooms + Rate/room</div>
+    <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+      <div id="bk_room_inputs" style="display:flex; gap:10px; flex:1;">
+        <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
+        <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
       </div>
-
-      <div id="bk_room_only" style="margin-top:10px;">
-        <!-- Visible room input: phone keypad (no commas needed) -->
-        <div style="display:flex; gap:10px; align-items:center;">
-          <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
-          <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
-        </div>
-
-        <!-- Hidden comma string (keeps your existing logic working) -->
-        <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
-
-        <!-- Chips preview -->
-        <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
-
-        <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
-      </div>
-
-      <!-- Hidden comma string (keeps your existing logic working) -->
+      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
+    </div>
+    
+    <div id="bk_room_extras">
       <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
-
-      <!-- Chips preview -->
       <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
-
       <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
     </div>
-
     <div class="label">Booker name</div>
     <input class="input" id="bk_booker" value="${esc_(b.booker_name||"")}" placeholder="Person name" />
 
@@ -572,11 +554,18 @@ const roomStatusEl = document.getElementById("bk_room_status");
 ------------------------- */
 function syncRoomUi_(){
   const t = String(typeEl?.value || "room");
+  const rLabel = document.getElementById("bk_room_label");
+  const rInputs = document.getElementById("bk_room_inputs");
+  const rExtras = document.getElementById("bk_room_extras");
 
   if(t === "room"){
-    if(roomWrap) roomWrap.style.display = "";
+    if(rLabel) rLabel.innerText = "Multiple Rooms + Rate/room";
+    if(rInputs) rInputs.style.display = "flex";
+    if(rExtras) rExtras.style.display = "block";
   }else{
-    if(roomWrap) roomWrap.style.display = "none";
+    if(rLabel) rLabel.innerText = "Event Rate";
+    if(rInputs) rInputs.style.display = "none";
+    if(rExtras) rExtras.style.display = "none";
     if(roomEl) roomEl.value = "";
   }
 }
@@ -585,7 +574,7 @@ function syncRoomUi_(){
   if(!roomStatusEl) return;
 
   const t = String(typeEl?.value || "room");
-if(t !== "room" || !roomWrap){
+if(t !== "room"){
   roomStatusEl.innerHTML = "";
   return;
 }
