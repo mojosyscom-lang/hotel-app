@@ -503,12 +503,24 @@ function openEditSheet_(root, dayIso, booking){
        <div id="bk_room_wrap">
       <div class="label">Multiple Rooms + Rate/room </div>
 
-      <!-- Visible room input: phone keypad (no commas needed) -->
-      <div style="display:flex; gap:10px; align-items:center;">
-        <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
-        <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
+            <div style="display:flex; gap:10px; align-items:center;">
         <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
-        
+      </div>
+
+      <div id="bk_room_only" style="margin-top:10px;">
+        <!-- Visible room input: phone keypad (no commas needed) -->
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
+          <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
+        </div>
+
+        <!-- Hidden comma string (keeps your existing logic working) -->
+        <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
+
+        <!-- Chips preview -->
+        <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+
+        <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
       </div>
 
       <!-- Hidden comma string (keeps your existing logic working) -->
