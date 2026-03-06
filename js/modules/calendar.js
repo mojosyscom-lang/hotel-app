@@ -501,13 +501,14 @@ function openEditSheet_(root, dayIso, booking){
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
        <div id="bk_room_wrap">
-      <div class="label">Room + Rate</div>
+      <div class="label">Multiple Rooms + Rate/room </div>
 
       <!-- Visible room input: phone keypad (no commas needed) -->
       <div style="display:flex; gap:10px; align-items:center;">
         <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
-        <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
         <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
+        <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
+        
       </div>
 
       <!-- Hidden comma string (keeps your existing logic working) -->
@@ -577,7 +578,9 @@ if(t !== "room" || !roomWrap){
   return;
 }
 
-  const start_date = String(startEl?.value || "").trim();
+  const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
+  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : ""; // YYYY-MM-DD
+
   const end_date = String(endEl?.value || "").trim();
   const rawRooms = String(roomEl?.value || "");
 
