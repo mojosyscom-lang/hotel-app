@@ -171,6 +171,30 @@ function addDays_(iso, days){
   dt.setDate(dt.getDate()+days);
   return isoDate_(dt);
 }
+function diffDaysInclusive_(startIso, endIso){
+  const s = parseIso_(startIso);
+  const e = parseIso_(endIso);
+  if(!s || !e) return 0;
+  const ms = e.getTime() - s.getTime();
+  const days = Math.floor(ms / 86400000) + 1;
+  return days > 0 ? days : 0;
+}
+
+function diffNights_(startIso, endIso){
+  const s = parseIso_(startIso);
+  const e = parseIso_(endIso);
+  if(!s || !e) return 0;
+  const ms = e.getTime() - s.getTime();
+  const nights = Math.floor(ms / 86400000);
+  return nights > 0 ? nights : 1; // same day = 1 night for your current booking style
+}
+
+function num0_(v){
+  const n = Number(v);
+  return isFinite(n) ? n : 0;
+}
+
+
 function inRange_(dayIso, startIso, endIso){
   // inclusive range
   return (dayIso >= startIso && dayIso <= endIso);
@@ -375,8 +399,12 @@ function openDaySheet_(root, dayIso){
     const note = esc_(b.note || "");
     const range = `${esc_(b.start_date)} → ${esc_(b.end_date)}`;
 
-    const roomNo = String(b.room_no || "").trim();
-         const rate = String(b.rate || "").trim();
+       const roomNo = String(b.room_no || "").trim();
+    const rate = String(b.rate || "").trim();
+    const totalAmount = String(b.total_amount || "").trim();
+    const nightsCount = String(b.nights_count || "").trim();
+    const daysCount = String(b.days_count || "").trim();
+    const roomsCount = String(b.rooms_count || "").trim();
     const booker = String(b.booker_name || "").trim();
     const phone = String(b.contact_number || "").trim();
 
@@ -385,9 +413,9 @@ function openDaySheet_(root, dayIso){
       ? roomNo.split(",").map(x=>x.trim()).filter(Boolean).join(", ")
       : "";
 
-        const typeLabel = (type === "event")
-      ? "Event"
-      : (`Room${roomPretty ? " • " + esc_(roomPretty) : ""}${rate ? " • Rate: ₹" + esc_(rate) : ""}`);
+          const typeLabel = (type === "event")
+      ? (`Event${rate ? " • Tariff: ₹" + esc_(rate) : ""}${daysCount ? " • Days: " + esc_(daysCount) : ""}${totalAmount ? " • Amount: ₹" + esc_(totalAmount) : ""}`)
+      : (`Room${roomPretty ? " • " + esc_(roomPretty) : ""}${rate ? " • Rate: ₹" + esc_(rate) : ""}${roomsCount ? " • Rooms: " + esc_(roomsCount) : ""}${nightsCount ? " • Nights: " + esc_(nightsCount) : ""}${totalAmount ? " • Amount: ₹" + esc_(totalAmount) : ""}`);
 
     const who = (booker || phone)
       ? `${booker ? esc_(booker) : "-"}${phone ? " • " + esc_(phone) : ""}`
@@ -494,27 +522,29 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">Company name</div>
     <input class="input" id="bk_title" value="${esc_(b.title||"")}" placeholder="Hotel / Company name" />
 
-            <div class="label">Start date/time</div>
+            <div class="label">Check In Date/time</div>
       <input class="input" id="bk_start_dt" type="datetime-local" value="${esc_(toLocalDTValue_(bookingIsoFromParts_(b.start_date||dayIso, b.start_time||"09:00")))}" />
 
-    <div class="label">End date</div>
+    <div class="label">Check Out Date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
-       <div class="label" id="bk_room_label">Multiple Rooms + Rate/room</div>
+       <div class="label" id="bk_room_label">Multiple Rooms + Tariff</div>
     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
       <div id="bk_room_inputs" style="display:flex; gap:10px; flex:1;">
-        <input class="input" id="bk_room_one" value="" placeholder="Room (e.g. 101)" inputmode="tel" type="tel" style="flex:1;" />
+        <input class="input" id="bk_room_one" value="" placeholder="No. of Rooms (e.g. 101 102 103) click add after each" inputmode="tel" type="tel" style="flex:1;" />
         <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
       </div>
-      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate" inputmode="numeric" type="number" style="width:140px;" />
+      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Tariff" inputmode="numeric" type="number" style="width:140px;" />
     </div>
     
-    <div id="bk_room_extras">
+        <div id="bk_room_extras">
       <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
       <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
       <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
     </div>
-    <div class="label">Booker name</div>
+    <div class="small" id="bk_amount_info" style="margin-top:8px; color:#444;"></div>
+
+    <div class="label">Booker name / Guest Name</div>
     <input class="input" id="bk_booker" value="${esc_(b.booker_name||"")}" placeholder="Person name" />
 
     <div class="label">Contact number</div>
@@ -522,7 +552,7 @@ function openEditSheet_(root, dayIso, booking){
 
   
 
-    <div class="label">Notes</div>
+    <div class="label">Remark</div>
     <textarea class="textarea" id="bk_note" placeholder="Optional notes">${esc_(b.note||"")}</textarea>
 
     <div class="btnRow">
@@ -548,6 +578,7 @@ const chipsEl = document.getElementById("bk_room_chips");
 const rateEl = document.getElementById("bk_rate");
 const phoneEl = document.getElementById("bk_phone");
 const roomStatusEl = document.getElementById("bk_room_status");
+const amountInfoEl = document.getElementById("bk_amount_info");
 
 /* -------------------------
    Room type toggle
@@ -570,6 +601,56 @@ function syncRoomUi_(){
   }
 }
 
+function syncAmountUi_(){
+  if(!amountInfoEl) return;
+
+  const type = String(typeEl?.value || "room");
+  const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
+  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
+  const end_date = String(endEl?.value || "").trim();
+  const rate = num0_(rateEl?.value || 0);
+
+  if(!start_date || !end_date){
+    amountInfoEl.innerHTML = `<span style="color:#888;">Select start and end date to calculate amount.</span>`;
+    return;
+  }
+
+  if(type === "event"){
+    const days = diffDaysInclusive_(start_date, end_date);
+    const total = rate * days;
+    amountInfoEl.innerHTML = `
+      <b>Event Days:</b> ${days} &nbsp; | &nbsp;
+      <b>Total Amount:</b> ₹${total}
+    `;
+    return;
+  }
+
+  const rooms = String(roomEl?.value || "")
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  const roomsCount = rooms.length;
+  const nights = diffNights_(start_date, end_date);
+  const total = rate * nights * roomsCount;
+
+  if(!roomsCount){
+    amountInfoEl.innerHTML = `
+      <b>Nights:</b> ${nights} &nbsp; | &nbsp;
+      <b>Rooms:</b> 0 &nbsp; | &nbsp;
+      <b>Total Amount:</b> ₹0
+    `;
+    return;
+  }
+
+  amountInfoEl.innerHTML = `
+    <b>Nights:</b> ${nights} &nbsp; | &nbsp;
+    <b>Rooms:</b> ${roomsCount} &nbsp; | &nbsp;
+    <b>Total Amount:</b> ₹${total}
+  `;
+}
+
+  
   function syncRoomAvailabilityUi_(){
   if(!roomStatusEl) return;
 
@@ -661,11 +742,13 @@ if(typeEl){
   typeEl.addEventListener("change", ()=>{
     syncRoomUi_();
     syncRoomAvailabilityUi_();
+    syncAmountUi_();
   });
 }
 
 syncRoomUi_();
   syncRoomAvailabilityUi_();
+  syncAmountUi_();
 
 /* -------------------------
    Room numbers (phone keypad)
@@ -685,6 +768,7 @@ function setRoomsList_(arr){
   if(roomEl) roomEl.value = uniq.join(",");
   paintChips_();
   syncRoomAvailabilityUi_();
+  syncAmountUi_();
 }
 function paintChips_(){
   if(!chipsEl) return;
@@ -764,6 +848,13 @@ if(phoneEl){
     phoneEl.value = digits;
   });
 }
+
+
+  if(rateEl){
+  rateEl.addEventListener("input", ()=>{
+    syncAmountUi_();
+  });
+}
   
 
 function clampRange_(){
@@ -774,6 +865,7 @@ function clampRange_(){
     endEl.value = d;
   }
   syncRoomAvailabilityUi_();
+  syncAmountUi_();
 }
 if(startDtEl) startDtEl.addEventListener("change", clampRange_);
 if(endEl) endEl.addEventListener("change", clampRange_);
@@ -793,7 +885,23 @@ if(endEl) endEl.addEventListener("change", clampRange_);
 
     const end_date = String(endEl.value||"").trim();
 
-    const rate = String(rateEl?.value || "").trim();
+        const rate = String(rateEl?.value || "").trim();
+
+    const roomsCount = String(type) === "room"
+      ? String(room_no).split(",").map(x=>x.trim()).filter(Boolean).length
+      : 0;
+
+    const nightsCount = String(type) === "room"
+      ? diffNights_(start_date, end_date)
+      : 0;
+
+    const daysCount = String(type) === "event"
+      ? diffDaysInclusive_(start_date, end_date)
+      : 0;
+
+    const totalAmount = String(type) === "event"
+      ? (num0_(rate) * daysCount)
+      : (num0_(rate) * nightsCount * roomsCount);
 
        if(!start_date || !end_date){
       alert("Please select start date/time and end date.");
@@ -854,16 +962,19 @@ if(endEl) endEl.addEventListener("change", clampRange_);
     if(isEdit){
       const idx = (db.bookings||[]).findIndex(x=>String(x.id)===String(b.id));
       if(idx >= 0){
-        db.bookings[idx] = {
+               db.bookings[idx] = {
           ...db.bookings[idx],
           type, title, room_no, rate, booker_name, contact_number,
-          note, start_date, end_date,
-                    start_time,
+          note, start_date, end_date, start_time,
+          rooms_count: roomsCount,
+          nights_count: nightsCount,
+          days_count: daysCount,
+          total_amount: totalAmount,
           updated_at: store.nowISO()
         };
       }
     }else{
-      db.bookings.push({
+           db.bookings.push({
         id: uid_(),
         type,
         title,
@@ -875,6 +986,10 @@ if(endEl) endEl.addEventListener("change", clampRange_);
         start_date,
         end_date,
         start_time,
+        rooms_count: roomsCount,
+        nights_count: nightsCount,
+        days_count: daysCount,
+        total_amount: totalAmount,
         created_at: store.nowISO(),
         updated_at: store.nowISO()
       });
