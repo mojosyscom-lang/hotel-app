@@ -255,7 +255,7 @@ export function renderDashboard(root){
       ${barSvg_(items)}
     </div>
 
-    <div id="dash_booking_panel"></div>
+    
   `;
 
 
@@ -263,24 +263,26 @@ export function renderDashboard(root){
     const preRoomBtn = root.querySelector("#dash_pre_room_btn");
   const preEventBtn = root.querySelector("#dash_pre_event_btn");
 
-  if(preRoomBtn){
+   if(preRoomBtn){
     preRoomBtn.addEventListener("click", async ()=>{
       const mod = await import("./table.js");
-      mod.openBookingTable(root, {
+      mod.renderBookingTablePage(root, {
         mode: "room",
         monthKey: currentMonthKey,
-        search: ""
+        search: "",
+        onBack: ()=> renderDashboard(root)
       });
     });
   }
 
-  if(preEventBtn){
+   if(preEventBtn){
     preEventBtn.addEventListener("click", async ()=>{
       const mod = await import("./table.js");
-      mod.openBookingTable(root, {
+      mod.renderBookingTablePage(root, {
         mode: "event",
         monthKey: currentMonthKey,
-        search: ""
+        search: "",
+        onBack: ()=> renderDashboard(root)
       });
     });
   }
