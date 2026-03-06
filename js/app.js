@@ -5,7 +5,7 @@ import { renderDashboard } from "./modules/dashboard.js";
 import { renderLeads, onFabLeads, openLeadById } from "./modules/leads.js";
 import { renderFollowups, onFabFollowups, openFollowupById } from "./modules/followups.js";
 import { renderContracts, onFabContracts } from "./modules/contracts.js";
-import { renderTerms, onFabTerms } from "./modules/terms.js";
+import { renderTerms, onFabTerms, renderTermsSettings } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
 import { renderCalendar, onFabCalendar, openCalendarDay } from "./modules/calendar.js";
 import { renderCompanySettings } from "./modules/company_settings.js";
@@ -743,6 +743,14 @@ ${canInstallPwa ? `
       <div class="menuArrow">›</div>
     </div>
 
+	 <div class="menuItem" data-menu="terms">
+      <div class="menuLeft">
+        <div class="menuTitle">Terms Settings</div>
+        <div class="menuSub">Edit Terms & Conditions</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+
     <div class="menuItem" data-menu="about">
       <div class="menuLeft">
         <div class="menuTitle">About</div>
@@ -997,6 +1005,14 @@ document.addEventListener("click", async (e)=>{
   await renderCompanySettings(body, renderSettingsMenu_);
   return;
 }
+
+	   if(key === "terms"){
+      const body = document.getElementById("settings_sheet_body");
+      if(!body) return;
+      await renderTermsSettings(body, renderSettingsMenu_);
+      return;
+    }
+	  
   }
 });
 
@@ -1219,6 +1235,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
