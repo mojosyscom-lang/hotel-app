@@ -81,18 +81,52 @@ export function renderDashboard(root){
   // Monthly revenue (sum of rate for bookings whose start_date is in current month)
   // (If you later want "every day in range", tell me — we’ll change logic)
   const roomRevenueMonth = bookingsArr.reduce((sum,b)=>{
-    const s = String(b && b.start_date || "");
-    if(!isRoom(b)) return sum;
-    if(!s || s.slice(0,7) !== monthPrefix) return sum;
-    return sum + rateNum(b);
-  }, 0);
+  if(!isRoom(b)) return sum;
 
-  const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
-    const s = String(b && b.start_date || "");
-    if(!isEvent(b)) return sum;
-    if(!s || s.slice(0,7) !== monthPrefix) return sum;
-    return sum + rateNum(b);
-  }, 0);
+  const s = String(b && b.start_date || "");
+  const e = String(b && b.end_date || "");
+  if(!s || !e) return sum;
+
+  // count days that fall inside this month (inclusive)
+  const start = new Date(s + "T00:00:00");
+  const end = new Date(e + "T00:00:00");
+  if(!isFinite(start) || !isFinite(end)) return sum;
+
+  // month window
+  const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+  const me = new Date(now.getFullYear(), now.getMonth()+1, 0);
+
+  const useStart = start > ms ? start : ms;
+  const useEnd = end < me ? end : me;
+
+  if(useEnd < useStart) return sum;
+
+  const days = Math.floor((useEnd - useStart) / 86400000) + 1; // inclusive days
+  return sum + (rateNum(b) * days);
+}, 0);
+
+ const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
+  if(!isEvent(b)) return sum;
+
+  const s = String(b && b.start_date || "");
+  const e = String(b && b.end_date || "");
+  if(!s || !e) return sum;
+
+  const start = new Date(s + "T00:00:00");
+  const end = new Date(e + "T00:00:00");
+  if(!isFinite(start) || !isFinite(end)) return sum;
+
+  const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+  const me = new Date(now.getFullYear(), now.getMonth()+1, 0);
+
+  const useStart = start > ms ? start : ms;
+  const useEnd = end < me ? end : me;
+
+  if(useEnd < useStart) return sum;
+
+  const days = Math.floor((useEnd - useStart) / 86400000) + 1;
+  return sum + (rateNum(b) * days);
+}, 0);
 
   const termsLen = String((db.terms && db.terms.text) ? db.terms.text : "").trim().length;
   const termsDone = termsLen > 0 ? "Yes" : "No";
