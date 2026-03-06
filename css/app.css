@@ -160,6 +160,35 @@ body{
 }
 .card p{ margin: 0; color: var(--muted); }
 
+/* ---------------- Dashboard: Stats grid ---------------- */
+.statsGrid{
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.statsCard{
+  margin: 0 !important;          /* override .card margin-bottom */
+  padding: 12px;                  /* smaller than normal cards */
+  min-height: 110px;              /* helps look like tiles */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.statsCard .small{
+  font-size: 11px;
+}
+
+.statsCard .statNum{
+  font-size: 22px;
+  font-weight: 900;
+  margin-top: 6px;
+  line-height: 1.1;
+}
+
+
+
 .row{
   display: flex;
   gap: 10px;
@@ -713,6 +742,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
