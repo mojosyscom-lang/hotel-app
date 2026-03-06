@@ -119,59 +119,59 @@ export function renderDashboard(root){
 
       <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:stretch;">
         <!-- Small stat card style: auto-fit based on screen width -->
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Leads</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${leads}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Follow-ups</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${followups}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Contracts</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${contracts}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Bookings (Room)</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${roomCount}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Bookings (Event)</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${eventCount}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Terms added?</div>
           <div style="font-size:20px; font-weight:900; margin-top:6px;">${termsDone}</div>
         </div>
 
         <!-- ✅ NEW 4 cards -->
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Today Room</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${todayRoomCount}</div>
-          <div class="small" style="margin-top:6px;">${todayIso}</div>
+          <div class="small" style="font-size:14px; margin-top:6px;">${todayIso}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 140px; min-width:140px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Today Event</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${todayEventCount}</div>
-          <div class="small" style="margin-top:6px;">${todayIso}</div>
+          <div class="small" style="font-size:14px; margin-top:6px;">${todayIso}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 160px; min-width:160px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Room Revenue (Month)</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">₹${roomRevenueMonth}</div>
-          <div class="small" style="margin-top:6px;">${monthPrefix}</div>
+          <div class="small" style="font-size:14px; margin-top:6px;">${monthPrefix}</div>
         </div>
 
-        <div class="card" style="margin:0; flex:1 1 160px; min-width:160px; padding:12px;">
+        <div class="card" style="margin:0; flex:1 1 120px; min-width:120px; padding:12px;">
           <div class="small">Event Revenue (Month)</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">₹${eventRevenueMonth}</div>
-          <div class="small" style="margin-top:6px;">${monthPrefix}</div>
+          <div class="small" style="font-size:14px; margin-top:6px;">${monthPrefix}</div>
         </div>
       </div>
      
