@@ -88,7 +88,7 @@ function searchText_(b){
   ].map(v=>String(v || "").toLowerCase()).join(" ");
 }
 
-export function openBookingTable(root, opts){
+export function renderBookingTablePage(root, opts){
   const mode = String((opts && opts.mode) || "room").trim(); // room | event
   const monthKeyDefault = String((opts && opts.monthKey) || "").trim();
   const searchDefault = String((opts && opts.search) || "").trim();
@@ -101,8 +101,7 @@ export function openBookingTable(root, opts){
 
   const source = bookingsArr.filter(b => mode === "event" ? isEvent(b) : isRoom(b));
 
-  const panel = root.querySelector("#dash_booking_panel");
-  if(!panel) return;
+    if(!root) return;
 
   const monthKey = monthKeyDefault;
   const search = searchDefault.toLowerCase();
@@ -137,11 +136,11 @@ export function openBookingTable(root, opts){
     </tr>
   `).join("");
 
-  panel.innerHTML = `
+   root.innerHTML = `
     <div class="card">
       <div style="display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-        <h2 style="font-size:16px; margin:0;">${title} Table</h2>
-        <button class="btn" id="dash_table_close" type="button">Close</button>
+        <h2 style="font-size:16px; margin:0;">${title}</h2>
+        <button class="btn" id="dash_table_back" type="button">Back</button>
       </div>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
@@ -189,33 +188,36 @@ export function openBookingTable(root, opts){
     </div>
   `;
 
-  const closeBtn = root.querySelector("#dash_table_close");
+  const backBtn = root.querySelector("#dash_table_back");
   const monthEl = root.querySelector("#dash_filter_month");
   const searchEl = root.querySelector("#dash_filter_search");
 
-  if(closeBtn){
-    closeBtn.addEventListener("click", ()=>{
-      const panel2 = root.querySelector("#dash_booking_panel");
-      if(panel2) panel2.innerHTML = "";
+  if(backBtn){
+    backBtn.addEventListener("click", ()=>{
+      if(typeof opts?.onBack === "function"){
+        opts.onBack();
+      }
     });
   }
 
   if(monthEl){
     monthEl.addEventListener("change", ()=>{
-      openBookingTable(root, {
+      renderBookingTablePage(root, {
         mode,
         monthKey: monthEl.value,
-        search: searchEl ? searchEl.value : ""
+        search: searchEl ? searchEl.value : "",
+        onBack: opts?.onBack
       });
     });
   }
 
   if(searchEl){
     searchEl.addEventListener("input", ()=>{
-      openBookingTable(root, {
+      renderBookingTablePage(root, {
         mode,
         monthKey: monthEl ? monthEl.value : "",
-        search: searchEl.value
+        search: searchEl.value,
+        onBack: opts?.onBack
       });
     });
   }
