@@ -1,5 +1,55 @@
 import { store } from "../storage.js";
 
+
+
+function monthKeyFromIso_(iso){
+  return String(iso || "").slice(0, 7);
+}
+
+function roomsCount_(b){
+  const direct = Number(b && b.rooms_count);
+  if(isFinite(direct) && direct > 0) return direct;
+
+  return String(b && b.room_no || "")
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean)
+    .length;
+}
+
+function roomNights_(b){
+  const direct = Number(b && b.nights_count);
+  if(isFinite(direct) && direct > 0) return direct;
+
+  const s = String(b && b.start_date || "");
+  const e = String(b && b.end_date || "");
+  if(!s || !e) return 0;
+
+  const start = new Date(s + "T00:00:00");
+  const end = new Date(e + "T00:00:00");
+  if(!isFinite(start) || !isFinite(end)) return 0;
+
+  const nights = Math.floor((end - start) / 86400000);
+  return nights > 0 ? nights : 1;
+}
+
+function totalAmount_(b){
+  const direct = Number(b && b.total_amount);
+  if(isFinite(direct) && direct >= 0) return direct;
+
+  const rate = Number(b && b.rate) || 0;
+  return rate * roomNights_(b) * roomsCount_(b);
+}
+
+function eventAmount_(b){
+  const direct = Number(b && b.total_amount);
+  if(isFinite(direct) && direct >= 0) return direct;
+
+  const rate = Number(b && b.rate) || 0;
+  const days = Number(b && b.days_count) || 0;
+  return rate * days;
+}
+
 function n_(v){ return Number(v)||0; }
 
 function barSvg_(items){
@@ -54,11 +104,12 @@ export function renderDashboard(root){
   const eventCount = bookingsArr.filter(b => String(b && b.type || "") === "event").length;
 
     // Today + current month
-  const pad2 = (n)=> String(n).padStart(2,"0");
+    const pad2 = (n)=> String(n).padStart(2,"0");
   const now = new Date();
-const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+  const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+  const currentMonthKey = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const monthPrefix = monthNames[now.getMonth()];
+  const monthPrefix = monthNames[now.getMonth()];
 
   // Helpers inline (no new exported functions)
   const inRange = (day, s, e)=> (day && s && e && day >= s && day <= e);
@@ -66,12 +117,13 @@ const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getD
   const isEvent = (b)=> String(b && b.type || "") === "event";
   const rateNum = (b)=> Number(b && b.rate) || 0;
 
-  // Today counts (active bookings that cover today)
-  const todayRoomCount = bookingsArr.filter(b=>{
+    // Today counts (active bookings that cover today)
+  const todayRoomCount = bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
     const e = String(b && b.end_date || "");
-    return isRoom(b) && inRange(todayIso, s, e);
-  }).length;
+    if(!(isRoom(b) && inRange(todayIso, s, e))) return sum;
+    return sum + roomsCount_(b);
+  }, 0);
 
   const todayEventCount = bookingsArr.filter(b=>{
     const s = String(b && b.start_date || "");
@@ -79,56 +131,30 @@ const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getD
     return isEvent(b) && inRange(todayIso, s, e);
   }).length;
 
-  // Monthly revenue (sum of rate for bookings whose start_date is in current month)
-  // (If you later want "every day in range", tell me — we’ll change logic)
+  // Pre-booked = today + future
+  const preBookedNights = bookingsArr.reduce((sum,b)=>{
+    const e = String(b && b.end_date || "");
+    if(!isRoom(b) || !e || e < todayIso) return sum;
+    return sum + roomNights_(b);
+  }, 0);
+
+  const preBookedEvents = bookingsArr.filter(b=>{
+    const e = String(b && b.end_date || "");
+    return isEvent(b) && e && e >= todayIso;
+  }).length;
+
+  // Monthly revenue directly from stored total_amount
   const roomRevenueMonth = bookingsArr.reduce((sum,b)=>{
-  if(!isRoom(b)) return sum;
+    if(!isRoom(b)) return sum;
+    if(monthKeyFromIso_(b && b.start_date) !== currentMonthKey) return sum;
+    return sum + totalAmount_(b);
+  }, 0);
 
-  const s = String(b && b.start_date || "");
-  const e = String(b && b.end_date || "");
-  if(!s || !e) return sum;
-
-  // count days that fall inside this month (inclusive)
-  const start = new Date(s + "T00:00:00");
-  const end = new Date(e + "T00:00:00");
-  if(!isFinite(start) || !isFinite(end)) return sum;
-
-  // month window
-  const ms = new Date(now.getFullYear(), now.getMonth(), 1);
-  const me = new Date(now.getFullYear(), now.getMonth()+1, 0);
-
-  const useStart = start > ms ? start : ms;
-  const useEnd = end < me ? end : me;
-
-  if(useEnd < useStart) return sum;
-
-  const days = Math.floor((useEnd - useStart) / 86400000) + 1; // inclusive days
-  return sum + (rateNum(b) * days);
-}, 0);
-
- const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
-  if(!isEvent(b)) return sum;
-
-  const s = String(b && b.start_date || "");
-  const e = String(b && b.end_date || "");
-  if(!s || !e) return sum;
-
-  const start = new Date(s + "T00:00:00");
-  const end = new Date(e + "T00:00:00");
-  if(!isFinite(start) || !isFinite(end)) return sum;
-
-  const ms = new Date(now.getFullYear(), now.getMonth(), 1);
-  const me = new Date(now.getFullYear(), now.getMonth()+1, 0);
-
-  const useStart = start > ms ? start : ms;
-  const useEnd = end < me ? end : me;
-
-  if(useEnd < useStart) return sum;
-
-  const days = Math.floor((useEnd - useStart) / 86400000) + 1;
-  return sum + (rateNum(b) * days);
-}, 0);
-
+  const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
+    if(!isEvent(b)) return sum;
+    if(monthKeyFromIso_(b && b.start_date) !== currentMonthKey) return sum;
+    return sum + eventAmount_(b);
+  }, 0);
   const termsLen = String((db.terms && db.terms.text) ? db.terms.text : "").trim().length;
   const termsDone = termsLen > 0 ? "Yes" : "No";
 
@@ -184,27 +210,38 @@ const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getD
           <div style="font-size:20px; font-weight:900; margin-top:6px;">${termsDone}</div>
         </div>
 
-        <!-- ✅ NEW 4 cards -->
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Today Room</div>
+               <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+          <div class="small">Today Rooms</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${todayRoomCount}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${todayIso}</div>
         </div>
 
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Today Event</div>
+          <div class="small">Today Events</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${todayEventCount}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${todayIso}</div>
         </div>
 
+        <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
+          <div class="small">Pre-booked Nights</div>
+          <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
+          <div class="small" style="margin-top:6px;">Tap to view</div>
+        </button>
+
+        <button class="card" id="dash_pre_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
+          <div class="small">Pre-booked Events</div>
+          <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${preBookedEvents}</div>
+          <div class="small" style="margin-top:6px;">Tap to view</div>
+        </button>
+
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Room (${monthPrefix})</div>
+          <div class="small">Room Amount (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">₹${roomRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
         </div>
 
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Event (${monthPrefix})</div>
+          <div class="small">Event Amount (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">₹${eventRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
         </div>
@@ -212,10 +249,39 @@ const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getD
      
     </div>
 
-    <div class="card">
+       <div class="card">
       <h2 style="font-size:16px; margin-top:0;">Graph</h2>
-            <p class="small" style="margin-bottom:10px;">Leads / Follow-ups / Contracts / Room / Event</p>
+      <p class="small" style="margin-bottom:10px;">Leads / Follow-ups / Contracts / Room / Event</p>
       ${barSvg_(items)}
     </div>
+
+    <div id="dash_booking_panel"></div>
   `;
+
+
+
+    const preRoomBtn = root.querySelector("#dash_pre_room_btn");
+  const preEventBtn = root.querySelector("#dash_pre_event_btn");
+
+  if(preRoomBtn){
+    preRoomBtn.addEventListener("click", async ()=>{
+      const mod = await import("./table.js");
+      mod.openBookingTable(root, {
+        mode: "room",
+        monthKey: currentMonthKey,
+        search: ""
+      });
+    });
+  }
+
+  if(preEventBtn){
+    preEventBtn.addEventListener("click", async ()=>{
+      const mod = await import("./table.js");
+      mod.openBookingTable(root, {
+        mode: "event",
+        monthKey: currentMonthKey,
+        search: ""
+      });
+    });
+  }
 }
