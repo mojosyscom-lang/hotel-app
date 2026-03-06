@@ -294,7 +294,16 @@ function monthName_(m){
   const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return names[m] || "";
 }
-
+function setBtnBusy_(btn, busy){
+  if(!btn) return;
+  if(busy){
+    btn.classList.add("processing");
+    btn.disabled = true;
+  }else{
+    btn.classList.remove("processing");
+    btn.disabled = false;
+  }
+}
 function uid_(){
   return "bk_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
 }
@@ -492,6 +501,7 @@ function openDaySheet_(root, dayIso){
 
 function openEditSheet_(root, dayIso, booking){
   const isEdit = !!(booking && booking.id);
+  let submitBusy = false;
    const b = booking || {
     id: "",
     type: "room",
@@ -870,8 +880,25 @@ function clampRange_(){
 if(startDtEl) startDtEl.addEventListener("change", clampRange_);
 if(endEl) endEl.addEventListener("change", clampRange_);
 
-    document.getElementById("bk_save").addEventListener("click", async ()=>{
-    clampRange_();
+      document.getElementById("bk_save").addEventListener("click", async ()=>{
+    if(submitBusy) return;
+    submitBusy = true;
+
+    const saveBtn = document.getElementById("bk_save");
+    const delBtn = document.getElementById("bk_delete");
+    if(saveBtn){
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = "0.6";
+      saveBtn.style.pointerEvents = "none";
+    }
+    if(delBtn){
+      delBtn.disabled = true;
+      delBtn.style.opacity = "0.6";
+      delBtn.style.pointerEvents = "none";
+    }
+
+    try{
+      clampRange_();
 
       const type = document.getElementById("bk_type").value;
     const title = document.getElementById("bk_title").value.trim(); // Company name
@@ -1005,14 +1032,45 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       console.warn("Booking reminder schedule failed", e);
     }
 
-    closeSheet_();
+        closeSheet_();
     renderMonth_(root);
+    }finally{
+      submitBusy = false;
+      if(saveBtn){
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = "";
+        saveBtn.style.pointerEvents = "";
+      }
+      if(delBtn){
+        delBtn.disabled = false;
+        delBtn.style.opacity = "";
+        delBtn.style.pointerEvents = "";
+      }
+    }
   });
 
   if(isEdit){
-        document.getElementById("bk_delete").addEventListener("click", async ()=>{
+             document.getElementById("bk_delete").addEventListener("click", async ()=>{
+      if(submitBusy) return;
       const ok = confirm("Delete this booking?");
       if(!ok) return;
+
+      submitBusy = true;
+
+      const saveBtn = document.getElementById("bk_save");
+      const delBtn = document.getElementById("bk_delete");
+      if(saveBtn){
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = "0.6";
+        saveBtn.style.pointerEvents = "none";
+      }
+      if(delBtn){
+        delBtn.disabled = true;
+        delBtn.style.opacity = "0.6";
+        delBtn.style.pointerEvents = "none";
+      }
+
+      try{
       const db = store.get();
           db.bookings = (db.bookings||[]).filter(x=>String(x.id)!==String(b.id));
       store.set(db);
@@ -1025,8 +1083,21 @@ if(endEl) endEl.addEventListener("change", clampRange_);
         console.warn("Booking jobs delete failed", e);
       }
 
-      closeSheet_();
+          closeSheet_();
       renderMonth_(root);
+      }finally{
+        submitBusy = false;
+        if(saveBtn){
+          saveBtn.disabled = false;
+          saveBtn.style.opacity = "";
+          saveBtn.style.pointerEvents = "";
+        }
+        if(delBtn){
+          delBtn.disabled = false;
+          delBtn.style.opacity = "";
+          delBtn.style.pointerEvents = "";
+        }
+      }
     });
   }
 }
