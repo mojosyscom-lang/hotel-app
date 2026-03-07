@@ -1,4 +1,5 @@
 import { store } from "../storage.js";
+import { getObjectUrl } from "../images_db.js";
 
 function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -26,6 +27,152 @@ function monthTitleFromKey_(monthKey){
   const idx = Number(m) - 1;
   const mm = names[idx] || String(m || "").toUpperCase();
   return `${mm}-${y} BOOKING`;
+}
+
+
+function roomNightUnits_(b){
+  return roomsCount_(b) * roomNights_(b);
+}
+
+async function blobToDataUrl_(blob){
+  return await new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function getCompanyLogoDataUrl_(){
+  try{
+    const url = await getObjectUrl("company_logo");
+    if(!url) return "";
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await blobToDataUrl_(blob);
+  }catch(e){
+    console.warn("Logo load failed", e);
+    return "";
+  }
+}
+
+async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
+  const db = store.get();
+  const company = db.company || {};
+
+  const logoDataUrl = await getCompanyLogoDataUrl_();
+
+  const companyName = String(company.company_name || "").trim();
+  const contactName = String(company.contact_name || "").trim();
+  const phone = String(company.phone || "").trim();
+  const address = String(company.address || "").trim();
+  const gstin = String(company.gstin || "").trim();
+
+  const now = new Date();
+  const genDate = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+  const countLabel = mode === "event" ? "NO.DAY" : "NO.NIGHT";
+
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${esc_(title)}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    html, body { margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; color:#111; }
+    body { padding: 0; }
+    .wrap { width: 100%; }
+    table.report { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; }
+    table.report th, table.report td { border:1px solid #777; padding:6px 5px; text-align:center; vertical-align:middle; word-wrap:break-word; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    .tophead { background:#ffef00; font-weight:800; }
+    .titleRow th { background:#ffef00; font-size:15px; padding:8px; }
+    .metaCell { padding:0 !important; }
+    .metaWrap { display:flex; align-items:center; gap:12px; padding:10px; text-align:left; min-height:84px; }
+    .logoBox { width:74px; min-width:74px; height:74px; display:flex; align-items:center; justify-content:center; border:1px solid #bbb; background:#fff; overflow:hidden; }
+    .logoBox img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    .companyBlock { flex:1; }
+    .companyName { font-size:18px; font-weight:800; line-height:1.2; margin-bottom:4px; }
+    .metaLine { font-size:11px; line-height:1.35; }
+    .subTitle { font-size:11px; font-weight:600; }
+    .totals { background:#fff59d; font-weight:800; }
+    .empty { padding:12px; text-align:center; }
+    .right { text-align:right; }
+    .left { text-align:left; }
+    .small { font-size:10px; }
+    @media print {
+      .no-print { display:none !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <table class="report">
+      <thead>
+        <tr>
+          <th colspan="12" class="metaCell">
+            <div class="metaWrap">
+              <div class="logoBox">
+                ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" />` : ``}
+              </div>
+              <div class="companyBlock">
+                <div class="companyName">${esc_(companyName || "HOTEL REPORT")}</div>
+                ${contactName ? `<div class="metaLine"><b>Contact:</b> ${esc_(contactName)}</div>` : ``}
+                ${phone ? `<div class="metaLine"><b>Phone:</b> ${esc_(phone)}</div>` : ``}
+                ${address ? `<div class="metaLine"><b>Address:</b> ${esc_(address)}</div>` : ``}
+                ${gstin ? `<div class="metaLine"><b>GSTIN:</b> ${esc_(gstin)}</div>` : ``}
+                <div class="metaLine"><b>Generated:</b> ${esc_(genDate)}</div>
+              </div>
+            </div>
+          </th>
+        </tr>
+        <tr class="titleRow">
+          <th colspan="12">${esc_(title)}</th>
+        </tr>
+        <tr>
+          <th class="tophead">BOOKING DATE</th>
+          <th class="tophead">BOOKER NAME</th>
+          <th class="tophead">MOBILE NUMBER</th>
+          <th class="tophead">GUEST NAME</th>
+          <th class="tophead">COMPANY NAME</th>
+          <th class="tophead">CHECK IN</th>
+          <th class="tophead">CHECK OUT</th>
+          <th class="tophead">NO OF ROOMS</th>
+          <th class="tophead">${esc_(countLabel)}</th>
+          <th class="tophead">TARIFF</th>
+          <th class="tophead">AMOUNT</th>
+          <th class="tophead">REMARK</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml || `<tr><td colspan="12" class="empty">No data found.</td></tr>`}
+        ${totalsRowHtml}
+      </tbody>
+    </table>
+  </div>
+  <script>
+    window.onload = function(){
+      setTimeout(function(){
+        window.print();
+      }, 250);
+    };
+  </script>
+</body>
+</html>
+  `;
+
+  const w = window.open("", "_blank");
+  if(!w){
+    alert("Popup blocked. Please allow popups and try again.");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 function roomsCount_(b){
@@ -133,8 +280,8 @@ export function renderBookingTablePage(root, opts){
     const baseMonthTitle = monthTitleFromKey_(monthKey || monthKeyFromIso_(new Date().toISOString().slice(0,10))).replace(" BOOKING", "");
   const title = `${baseMonthTitle} ${mode === "event" ? "EVENT" : "ROOM"} BOOKING`;
 
-  const totalRooms = filtered.reduce((sum, b)=> sum + roomsCount_(b), 0);
-  const totalNights = filtered.reduce((sum, b)=> sum + roomNights_(b), 0);
+    const totalRooms = filtered.reduce((sum, b)=> sum + roomsCount_(b), 0);
+  const totalRoomNights = filtered.reduce((sum, b)=> sum + roomNightUnits_(b), 0);
   const totalDays = filtered.reduce((sum, b)=> sum + eventDays_(b), 0);
   const totalAmount = filtered.reduce((sum, b)=> sum + totalAmount_(b), 0);
 
@@ -147,7 +294,7 @@ export function renderBookingTablePage(root, opts){
     const checkIn = fmtDate_(b && b.start_date || "");
     const checkOut = fmtDate_(b && b.end_date || "");
     const noOfRooms = roomsCount_(b);
-    const noOfNights = roomNights_(b);
+    const noOfRoomNights = roomNightUnits_(b);
     const noOfDays = eventDays_(b);
     const tariff = Number(b && b.rate) || 0;
     const amount = totalAmount_(b);
@@ -163,7 +310,7 @@ export function renderBookingTablePage(root, opts){
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkIn)}</td>
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkOut)}</td>
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(noOfRooms)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? noOfDays : noOfNights)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? noOfDays : noOfRoomNights)}</td>
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(tariff)}</td>
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(amount)}</td>
         <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(remark)}</td>
@@ -175,18 +322,21 @@ export function renderBookingTablePage(root, opts){
     <tr style="background:#fff59d; font-weight:700;">
       <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;" colspan="7">TOTAL</td>
       <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalRooms)}</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? totalDays : totalNights)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? totalDays : totalRoomNights)}</td>
       <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">-</td>
       <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalAmount)}</td>
       <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;"></td>
     </tr>
   ` : "";
-
+  
    root.innerHTML = `
     <div class="card">
-      <div style="display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+            <div style="display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
         <h2 style="font-size:16px; margin:0;">${title}</h2>
-        <button class="btn" id="dash_table_back" type="button">Back</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="dash_table_pdf" type="button">Generate PDF</button>
+          <button class="btn" id="dash_table_back" type="button">Back</button>
+        </div>
       </div>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
@@ -233,7 +383,8 @@ export function renderBookingTablePage(root, opts){
     </div>
   `;
 
-  const backBtn = root.querySelector("#dash_table_back");
+   const backBtn = root.querySelector("#dash_table_back");
+  const pdfBtn = root.querySelector("#dash_table_pdf");
   const monthEl = root.querySelector("#dash_filter_month");
   const searchEl = root.querySelector("#dash_filter_search");
 
@@ -241,6 +392,27 @@ export function renderBookingTablePage(root, opts){
     backBtn.addEventListener("click", ()=>{
       if(typeof opts?.onBack === "function"){
         opts.onBack();
+      }
+    });
+  }
+
+    if(pdfBtn){
+    pdfBtn.addEventListener("click", async ()=>{
+      pdfBtn.disabled = true;
+      pdfBtn.style.opacity = "0.6";
+      try{
+        await openBookingPdf_({
+          mode,
+          monthKey,
+          search,
+          filtered,
+          totalsRowHtml: totalsRow,
+          rowsHtml: rows,
+          title
+        });
+      }finally{
+        pdfBtn.disabled = false;
+        pdfBtn.style.opacity = "";
       }
     });
   }
