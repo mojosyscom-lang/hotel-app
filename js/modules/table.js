@@ -10,6 +10,24 @@ function monthKeyFromIso_(iso){
   return String(iso || "").slice(0, 7);
 }
 
+function fmtDate_(iso){
+  const s = String(iso || "").trim();
+  if(!s) return "";
+  const parts = s.split("-");
+  if(parts.length !== 3) return s;
+  return `${parts[2]}.${parts[1]}.${String(parts[0]).slice(-2)}`;
+}
+
+function monthTitleFromKey_(monthKey){
+  const s = String(monthKey || "").trim();
+  if(!s) return "BOOKING";
+  const [y, m] = s.split("-");
+  const names = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+  const idx = Number(m) - 1;
+  const mm = names[idx] || String(m || "").toUpperCase();
+  return `${mm}-${y} BOOKING`;
+}
+
 function roomsCount_(b){
   const direct = Number(b && b.rooms_count);
   if(isFinite(direct) && direct > 0) return direct;
@@ -112,29 +130,57 @@ export function renderBookingTablePage(root, opts){
     return okMonth && okSearch;
   });
 
-  const title = mode === "event" ? "Pre-booked Events" : "Pre-booked Nights";
+    const baseMonthTitle = monthTitleFromKey_(monthKey || monthKeyFromIso_(new Date().toISOString().slice(0,10))).replace(" BOOKING", "");
+  const title = `${baseMonthTitle} ${mode === "event" ? "EVENT" : "ROOM"} BOOKING`;
 
-  const rows = filtered.map(b=>`
-    <tr>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.id || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.type || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.title || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.room_no || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.rate || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(roomsCount_(b))}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(roomNights_(b))}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(eventDays_(b))}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">₹${esc_(totalAmount_(b))}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.booker_name || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.contact_number || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.start_date || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.end_date || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.start_time || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.note || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.created_at || "")}</td>
-      <td style="padding:8px; border-bottom:1px solid var(--border);">${esc_(b && b.updated_at || "")}</td>
+  const totalRooms = filtered.reduce((sum, b)=> sum + roomsCount_(b), 0);
+  const totalNights = filtered.reduce((sum, b)=> sum + roomNights_(b), 0);
+  const totalDays = filtered.reduce((sum, b)=> sum + eventDays_(b), 0);
+  const totalAmount = filtered.reduce((sum, b)=> sum + totalAmount_(b), 0);
+
+  const rows = filtered.map(b=>{
+    const bookingDate = fmtDate_(b && (b.created_at ? String(b.created_at).slice(0,10) : b.start_date) || "");
+    const bookerName = String(b && b.booker_name || "").trim();
+    const mobile = String(b && b.contact_number || "").trim();
+    const guestName = String(b && b.booker_name || "").trim();
+    const companyName = String(b && b.title || "").trim();
+    const checkIn = fmtDate_(b && b.start_date || "");
+    const checkOut = fmtDate_(b && b.end_date || "");
+    const noOfRooms = roomsCount_(b);
+    const noOfNights = roomNights_(b);
+    const noOfDays = eventDays_(b);
+    const tariff = Number(b && b.rate) || 0;
+    const amount = totalAmount_(b);
+    const remark = String(b && b.note || "").trim();
+
+    return `
+      <tr>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(bookingDate)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(bookerName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mobile)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(guestName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(companyName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkIn)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkOut)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(noOfRooms)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? noOfDays : noOfNights)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(tariff)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(amount)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(remark)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const totalsRow = filtered.length ? `
+    <tr style="background:#fff59d; font-weight:700;">
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;" colspan="7">TOTAL</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalRooms)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? totalDays : totalNights)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">-</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalAmount)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;"></td>
     </tr>
-  `).join("");
+  ` : "";
 
    root.innerHTML = `
     <div class="card">
@@ -157,31 +203,30 @@ export function renderBookingTablePage(root, opts){
 
       <div class="small" style="margin-top:10px;">Showing ${filtered.length} row(s)</div>
 
-      <div style="overflow:auto; margin-top:12px;">
-        <table style="width:100%; min-width:1600px; border-collapse:collapse; font-size:13px;">
+            <div style="overflow:auto; margin-top:12px;">
+        <table style="width:100%; min-width:1400px; border-collapse:collapse; font-size:13px; background:#fff;">
           <thead>
             <tr>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">ID</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Type</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Company</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Room No</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Rate</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Rooms</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Nights</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Days</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Amount</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Booker</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Mobile</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Start Date</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">End Date</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Start Time</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Remark</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Created At</th>
-              <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Updated At</th>
+              <th colspan="12" style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center; font-weight:800;">${esc_(title)}</th>
+            </tr>
+            <tr>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">BOOKING DATE</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">BOOKER NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">MOBILE NUMBER</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">GUEST NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">COMPANY NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">CHECK IN</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">CHECK OUT</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">NO OF ROOMS</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">${mode === "event" ? "NO.DAY" : "NO.NIGHT"}</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">TARIFF</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">AMOUNT</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">REMARK</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || `<tr><td colspan="17" style="padding:12px;">No data found.</td></tr>`}
+            ${rows || `<tr><td colspan="12" style="padding:12px; border:1px solid #b7b7b7; text-align:center;">No data found.</td></tr>`}
+            ${totalsRow}
           </tbody>
         </table>
       </div>
