@@ -83,6 +83,32 @@ managePop.addEventListener("click", (e)=>{
 // front page route
 let route = "dashboard";
 
+function isSettingsSubpage_(){
+  const body = document.getElementById("settings_sheet_body");
+  if(!body) return false;
+
+  // If back button inside sheet exists, it means a subpage is open
+  return !!body.querySelector("#btn_back_menu");
+}
+
+function isDashboardTableOpen_(){
+  return !!document.getElementById("dash_table_back");
+}
+
+function isCalendarSheetOpen_(){
+  const bd = document.getElementById("cal_sheet_backdrop");
+  const sh = document.getElementById("cal_sheet");
+  return !!(bd && sh && bd.classList.contains("open") && sh.classList.contains("open"));
+}
+
+
+function normalizeRoute_(r){
+  const x = String(r || "").trim().toLowerCase();
+  return ["dashboard","leads","followups","calendar","contracts","terms","company"].includes(x)
+    ? x
+    : "dashboard";
+}
+
 const SETTINGS_KEY = "hotelcrm_settings_v1";
 
 // App Version
@@ -368,7 +394,17 @@ function setActiveNav_(r){
 }
 
 function render_(){
+  route = normalizeRoute_(route);
   setActiveNav_(route);
+
+  // Keep browser history in sync with main app route
+  if(window.location.hash !== "#" + route){
+    if(!window.location.hash){
+      history.replaceState({ route }, "", "#" + route);
+    }else{
+      history.pushState({ route }, "", "#" + route);
+    }
+  }
 
    if(route === "dashboard"){
     setSubtitle_("Dashboard");
@@ -1124,6 +1160,68 @@ if(laterBtn){
     // ignore update errors
   }
 }
+
+
+window.addEventListener("popstate", (e)=>{
+
+  // 1️⃣ Calendar edit/day sheet
+  if(isCalendarSheetOpen_()){
+    const closeBtn =
+      document.getElementById("cal_close2") ||
+      document.getElementById("cal_close");
+    if(closeBtn){
+      closeBtn.click();
+    }
+    history.pushState({ route }, "", "#" + route);
+    return;
+  }
+
+  // 2️⃣ Dashboard table view
+  if(isDashboardTableOpen_()){
+    const backBtn = document.getElementById("dash_table_back");
+    if(backBtn) backBtn.click();
+    history.pushState({ route }, "", "#" + route);
+    return;
+  }
+
+  // 3️⃣ Settings subpage → go back to settings main
+  if(isSettingsSubpage_()){
+    const btn = document.getElementById("btn_back_menu");
+    if(btn) btn.click();
+    history.pushState({ route }, "", "#" + route);
+    return;
+  }
+
+  // 4️⃣ Settings sheet open
+  const sheet = document.getElementById("settings_sheet");
+  if(sheet && sheet.classList.contains("open")){
+    closeSheet_();
+    history.pushState({ route }, "", "#" + route);
+    return;
+  }
+
+  // 5️⃣ Manage popup
+  if(document.body.classList.contains("manageOpen")){
+    closeManage_();
+    history.pushState({ route }, "", "#" + route);
+    return;
+  }
+
+  // 6️⃣ Route change
+  if(e.state && e.state.route){
+    route = normalizeRoute_(e.state.route);
+  }else{
+    const hashRoute = window.location.hash
+      ? window.location.hash.replace("#", "")
+      : "dashboard";
+    route = normalizeRoute_(hashRoute);
+  }
+
+  render_();
+});
+
+
+
 async function init_(){
 
   // ✅ PWA Service Worker
@@ -1176,7 +1274,8 @@ await checkForUpdate_();
     console.warn("Backup failed", e);
   }
 
-  // Finally render route UI
+   // Finally render route UI
+  route = normalizeRoute_(window.location.hash ? window.location.hash.replace("#","") : route);
   render_();
 
   // Deep link handling (from push notification click)
@@ -1235,6 +1334,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
