@@ -100,8 +100,22 @@ export function renderDashboard(root){
   const contracts = Array.isArray(db.contracts) ? db.contracts.length : 0;
 
   const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
-  const roomCount = bookingsArr.filter(b => String(b && b.type || "room") !== "event").length;
-  const eventCount = bookingsArr.filter(b => String(b && b.type || "") === "event").length;
+    const roomCount = bookingsArr.reduce((sum,b)=>{
+    const e = String(b && b.end_date || "");
+    const s = String(b && b.start_date || "");
+    if(String(b && b.type || "room") === "event") return sum;
+    if(!e || e < todayIso) return sum;
+    if(monthKeyFromIso_(s) !== currentMonthKey) return sum;
+    return sum + roomsCount_(b);
+  }, 0);
+  const eventCount = bookingsArr.filter(b=>{
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    return String(b && b.type || "") === "event"
+      && !!e
+      && e >= todayIso
+      && monthKeyFromIso_(s) === currentMonthKey;
+  }).length;
 
     // Today + current month
     const pad2 = (n)=> String(n).padStart(2,"0");
@@ -132,10 +146,10 @@ export function renderDashboard(root){
   }).length;
 
   // Pre-booked = today + future
-  const preBookedNights = bookingsArr.reduce((sum,b)=>{
+   const preBookedNights = bookingsArr.reduce((sum,b)=>{
     const e = String(b && b.end_date || "");
     if(!isRoom(b) || !e || e < todayIso) return sum;
-    return sum + roomNights_(b);
+    return sum + (roomNights_(b) * roomsCount_(b));
   }, 0);
 
   const preBookedEvents = bookingsArr.filter(b=>{
@@ -196,12 +210,12 @@ export function renderDashboard(root){
         </div>
 
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Bookings (Room)</div>
+          <div class="small">Rooms Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${roomCount}</div>
         </div>
 
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Bookings (Event)</div>
+          <div class="small">Events Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${eventCount}</div>
         </div>
 
@@ -211,7 +225,7 @@ export function renderDashboard(root){
         </div>
 
                <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
-          <div class="small">Today Rooms</div>
+          <div class="small">Rooms Booked Today</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${todayRoomCount}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${todayIso}</div>
         </div>
@@ -223,13 +237,13 @@ export function renderDashboard(root){
         </div>
 
         <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Pre-booked Nights</div>
+          <div class="small">Nights Booked</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
           <div class="small" style="margin-top:6px;">Tap to view</div>
         </button>
 
         <button class="card" id="dash_pre_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Pre-booked Events</div>
+          <div class="small">Event Days</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${preBookedEvents}</div>
           <div class="small" style="margin-top:6px;">Tap to view</div>
         </button>
