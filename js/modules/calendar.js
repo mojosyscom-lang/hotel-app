@@ -538,16 +538,18 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">Check Out Date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
-       <div class="label" id="bk_room_label">Multiple Rooms + Tariff</div>
-    <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+           <div class="label" id="bk_room_label">Rooms + Tariff</div>
+    <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;">
+      <input class="input" id="bk_rooms_count" value="${esc_(b.rooms_count || (String(b.room_no||"").split(",").map(x=>x.trim()).filter(Boolean).length || ""))}" placeholder="No. of Rooms" inputmode="numeric" type="number" min="1" style="width:140px;" />
+      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate / Room" inputmode="numeric" type="number" style="width:140px;" />
+    </div>
+
+    <div id="bk_room_extras" style="margin-top:10px;">
+      <div class="small" style="margin-bottom:6px;">Room numbers (optional)</div>
       <div id="bk_room_inputs" style="display:flex; gap:10px; flex:1;">
-        <input class="input" id="bk_room_one" value="" placeholder="No. of Rooms (e.g. 101 102 103) click add after each" inputmode="tel" type="tel" style="flex:1;" />
+        <input class="input" id="bk_room_one" value="" placeholder="Enter room no. and tap Add" inputmode="tel" type="tel" style="flex:1;" />
         <button class="btn" id="bk_room_add" type="button" style="white-space:nowrap;">Add</button>
       </div>
-      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Tariff" inputmode="numeric" type="number" style="width:140px;" />
-    </div>
-    
-        <div id="bk_room_extras">
       <input type="hidden" id="bk_room_no" value="${esc_(b.room_no||"")}" />
       <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
       <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
@@ -585,6 +587,7 @@ const roomEl = document.getElementById("bk_room_no"); // hidden comma-string
 const roomOneEl = document.getElementById("bk_room_one"); // visible (tel keypad)
 const roomAddEl = document.getElementById("bk_room_add");
 const chipsEl = document.getElementById("bk_room_chips");
+const roomsCountEl = document.getElementById("bk_rooms_count");
 const rateEl = document.getElementById("bk_rate");
 const phoneEl = document.getElementById("bk_phone");
 const roomStatusEl = document.getElementById("bk_room_status");
@@ -600,7 +603,7 @@ function syncRoomUi_(){
   const rExtras = document.getElementById("bk_room_extras");
 
   if(t === "room"){
-    if(rLabel) rLabel.innerText = "Multiple Rooms + Rate/room";
+    if(rLabel) rLabel.innerText = "Rooms + Rate/room";
     if(rInputs) rInputs.style.display = "flex";
     if(rExtras) rExtras.style.display = "block";
   }else{
@@ -640,7 +643,7 @@ function syncAmountUi_(){
     .map(x=>x.trim())
     .filter(Boolean);
 
-  const roomsCount = rooms.length;
+  const roomsCount = num0_(roomsCountEl?.value || 0) || rooms.length;
   const nights = diffNights_(start_date, end_date);
   const total = rate * nights * roomsCount;
 
@@ -686,8 +689,8 @@ if(t !== "room"){
     .map(x=>x.trim())
     .filter(Boolean);
 
-  if(!rooms.length){
-    roomStatusEl.innerHTML = `<span style="color:#888;">Enter room numbers to check availability</span>`;
+   if(!rooms.length){
+    roomStatusEl.innerHTML = `<span style="color:#888;">Room numbers are optional. Add them only if you want availability check.</span>`;
     return;
   }
 
@@ -860,7 +863,14 @@ if(phoneEl){
 }
 
 
-  if(rateEl){
+ if(roomsCountEl){
+  roomsCountEl.addEventListener("input", ()=>{
+    roomsCountEl.value = String(roomsCountEl.value || "").replace(/\D/g,"").slice(0,3);
+    syncAmountUi_();
+  });
+}
+
+if(rateEl){
   rateEl.addEventListener("input", ()=>{
     syncAmountUi_();
   });
@@ -914,8 +924,8 @@ if(endEl) endEl.addEventListener("change", clampRange_);
 
         const rate = String(rateEl?.value || "").trim();
 
-    const roomsCount = String(type) === "room"
-      ? String(room_no).split(",").map(x=>x.trim()).filter(Boolean).length
+        const roomsCount = String(type) === "room"
+      ? (num0_(roomsCountEl?.value || 0) || String(room_no).split(",").map(x=>x.trim()).filter(Boolean).length)
       : 0;
 
     const nightsCount = String(type) === "room"
@@ -942,12 +952,12 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       alert("Please enter company name.");
       return;
     }
-    if(String(type)==="room" && !room_no){
-      alert("Please enter room number.");
+       if(String(type)==="room" && !roomsCount){
+      alert("Please enter number of rooms.");
       return;
     }
 
-      if(type === "room"){
+      if(type === "room" && room_no){
 
   const dbCheck = store.get();
   ensureBookings_(dbCheck);
