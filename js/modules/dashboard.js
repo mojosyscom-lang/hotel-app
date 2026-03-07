@@ -218,13 +218,9 @@ export function renderDashboard(root){
   ];
 
   root.innerHTML = `
+   
     <div class="card">
-      <h2>Dashboard</h2>
-      
-    </div>
-
-    <div class="card">
-           <h2 style="font-size:16px; margin-top:0;">Counts</h2>
+           <h2 style="font-size:16px; margin-top:0;">Dashboard Counts</h2>
 
       <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;">
         <!-- Small stat card style: auto-fit based on screen width -->
@@ -271,13 +267,13 @@ export function renderDashboard(root){
         </div>
 
         <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Nights Booked</div>
+          <div class="small">Nights Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
           <div class="small" style="margin-top:6px;">Tap to view</div>
         </button>
 
         <button class="card" id="dash_pre_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Event Days</div>
+          <div class="small">Event Days (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${preBookedEvents}</div>
           <div class="small" style="margin-top:6px;">Tap to view</div>
         </button>
