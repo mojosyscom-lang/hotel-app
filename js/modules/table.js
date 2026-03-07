@@ -154,13 +154,14 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
       </tbody>
     </table>
   </div>
-  <script>
-    window.onload = function(){
-      setTimeout(function(){
-        window.print();
-      }, 250);
-    };
-  </script>
+ <script>
+    window.onload = function(){
+      setTimeout(function(){
+        window.print();
+        window.close();
+      }, 250);
+    };
+  </script>
 </body>
 </html>
   `;
