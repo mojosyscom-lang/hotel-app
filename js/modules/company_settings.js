@@ -89,8 +89,16 @@ export async function renderCompanySettings(hostEl, onBack){
         </div>
       </div>
 
-      <div class="label">Address</div>
+           <div class="label">Address</div>
       <textarea class="textarea" id="c_address" placeholder="Full address">${esc_(c.address || "")}</textarea>
+
+      <div class="row">
+        <div>
+          <div class="label">Total Rooms</div>
+          <input class="input" id="c_total_rooms" value="${esc_(c.total_rooms || "")}" placeholder="Total rooms in hotel" inputmode="numeric" />
+        </div>
+        <div></div>
+      </div>
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Header Branding</h2>
@@ -157,6 +165,7 @@ export async function renderCompanySettings(hostEl, onBack){
       phone: hostEl.querySelector("#c_phone").value.trim(),
       address: hostEl.querySelector("#c_address").value.trim(),
       gstin: hostEl.querySelector("#c_gstin").value.trim(),
+      total_rooms: hostEl.querySelector("#c_total_rooms").value.trim(),
 
       bank_name: hostEl.querySelector("#b_name").value.trim(),
       bank_branch: hostEl.querySelector("#b_branch").value.trim(),
