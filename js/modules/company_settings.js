@@ -158,7 +158,12 @@ export async function renderCompanySettings(hostEl, onBack){
   });
 
   // Save text profile
-  hostEl.querySelector("#c_save").addEventListener("click", async ()=>{
+
+
+      hostEl.querySelector("#c_save").addEventListener("click", async (ev)=>{
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    try{
     const company = {
       company_name: hostEl.querySelector("#c_name").value.trim(),
       contact_name: hostEl.querySelector("#c_contact").value.trim(),
@@ -176,11 +181,14 @@ export async function renderCompanySettings(hostEl, onBack){
       updated_at: store.nowISO()
     };
 
-    const db2 = store.get();
+     const db2 = store.get();
     db2.company = company;
     store.set(db2);
     await applyBranding();
     alert("Company profile saved.");
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // Image buttons
