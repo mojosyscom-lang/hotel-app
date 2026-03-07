@@ -232,7 +232,13 @@ body{
   background: var(--btn-bg);
   color: var(--btn-text);
 }
-
+.btn:disabled,
+button:disabled{
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}
 .btn.primary{
   border-color: transparent;
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
@@ -742,6 +748,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
