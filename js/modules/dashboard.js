@@ -100,7 +100,16 @@ export function renderDashboard(root){
   const contracts = Array.isArray(db.contracts) ? db.contracts.length : 0;
 
   const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
-    const roomCount = bookingsArr.reduce((sum,b)=>{
+    
+    // Today + current month
+    const pad2 = (n)=> String(n).padStart(2,"0");
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+  const currentMonthKey = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthPrefix = monthNames[now.getMonth()];
+
+  const roomCount = bookingsArr.reduce((sum,b)=>{
     const e = String(b && b.end_date || "");
     const s = String(b && b.start_date || "");
     if(String(b && b.type || "room") === "event") return sum;
@@ -117,13 +126,6 @@ export function renderDashboard(root){
       && monthKeyFromIso_(s) === currentMonthKey;
   }).length;
 
-    // Today + current month
-    const pad2 = (n)=> String(n).padStart(2,"0");
-  const now = new Date();
-  const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
-  const currentMonthKey = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const monthPrefix = monthNames[now.getMonth()];
 
   // Helpers inline (no new exported functions)
   const inRange = (day, s, e)=> (day && s && e && day >= s && day <= e);
@@ -164,11 +166,43 @@ export function renderDashboard(root){
     return sum + totalAmount_(b);
   }, 0);
 
-  const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
+    const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
     if(!isEvent(b)) return sum;
     if(monthKeyFromIso_(b && b.start_date) !== currentMonthKey) return sum;
     return sum + eventAmount_(b);
   }, 0);
+
+  const totalRooms = Number(db.company && db.company.total_rooms) || 0;
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-01`;
+  const monthEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(daysInMonth)}`;
+
+  const bookedRoomNightsMonth = bookingsArr.reduce((sum,b)=>{
+    if(!isRoom(b)) return sum;
+
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    const start = new Date(overlapStart + "T00:00:00");
+    const end = new Date(overlapEnd + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end)) return sum;
+
+    const overlapNights = Math.floor((end - start) / 86400000);
+    const safeNights = overlapNights > 0 ? overlapNights : 1;
+
+    return sum + (safeNights * roomsCount_(b));
+  }, 0);
+
+  const totalAvailableRoomNights = totalRooms * daysInMonth;
+  const occupancyPct = totalAvailableRoomNights > 0
+    ? Math.round((bookedRoomNightsMonth / totalAvailableRoomNights) * 100)
+    : 0;
+
   const termsLen = String((db.terms && db.terms.text) ? db.terms.text : "").trim().length;
   const termsDone = termsLen > 0 ? "Yes" : "No";
 
@@ -258,6 +292,12 @@ export function renderDashboard(root){
           <div class="small">Event Amount (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">₹${eventRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
+        </div>
+
+                <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+          <div class="small">Occupancy (${monthPrefix})</div>
+          <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${occupancyPct}%</div>
+          <div class="small" style="margin-top:6px;">${bookedRoomNightsMonth}/${totalAvailableRoomNights || 0} room nights</div>
         </div>
       </div>
      
