@@ -97,63 +97,93 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
 
   let y = topMargin;
 
-  // outer header box
-  doc.setDrawColor(120);
-  doc.setLineWidth(0.2);
-  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 28);
+    function drawCompanyBlock_(){
+    const boxY = y;
+    const boxW = pageW - marginLeft - marginRight;
 
-  // logo
-  if(logoDataUrl){
-    try{
-      doc.addImage(logoDataUrl, "PNG", marginLeft + 2, y + 2, 20, 20, undefined, "FAST");
-    }catch(e){
+    const metaLines = [];
+    if(contactName) metaLines.push(`Contact: ${contactName}`);
+    if(phone) metaLines.push(`Phone: ${phone}`);
+    if(address) metaLines.push(`Address: ${address}`);
+    if(gstin) metaLines.push(`GSTIN: ${gstin}`);
+    metaLines.push(`Generated: ${genDate}`);
+
+    const logoX = marginLeft + 2;
+    const logoY = boxY + 2;
+    const logoW = 20;
+    const logoH = 20;
+
+    const textX = marginLeft + 25;
+    const wrapW = pageW - textX - marginRight - 2;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    const companyLines = doc.splitTextToSize(companyName || "HOTEL REPORT", wrapW);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+
+    let totalLineCount = companyLines.length;
+    metaLines.forEach(line=>{
+      const wrapped = doc.splitTextToSize(line, wrapW);
+      totalLineCount += wrapped.length;
+    });
+
+    const contentH = 8 + (totalLineCount * 4);
+    const boxH = Math.max(28, contentH);
+
+    doc.setDrawColor(120);
+    doc.setLineWidth(0.2);
+    doc.rect(marginLeft, boxY, boxW, boxH);
+
+    if(logoDataUrl){
       try{
-        doc.addImage(logoDataUrl, "JPEG", marginLeft + 2, y + 2, 20, 20, undefined, "FAST");
-      }catch(err){
-        console.warn("Logo add failed", err);
+        doc.addImage(logoDataUrl, "PNG", logoX, logoY, logoW, logoH, undefined, "FAST");
+      }catch(e){
+        try{
+          doc.addImage(logoDataUrl, "JPEG", logoX, logoY, logoW, logoH, undefined, "FAST");
+        }catch(err){
+          console.warn("Logo add failed", err);
+        }
       }
     }
+
+    let textY = boxY + 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    companyLines.forEach((line, idx)=>{
+      doc.text(String(line), textX, textY + (idx * 5));
+    });
+
+    textY += (companyLines.length * 5) + 1;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+
+    metaLines.forEach(line=>{
+      const wrapped = doc.splitTextToSize(line, wrapW);
+      wrapped.forEach(w=>{
+        doc.text(String(w), textX, textY);
+        textY += 4;
+      });
+    });
+
+    y += boxH + 4;
   }
 
-  // company block
-  let textX = marginLeft + 25;
-  let textY = y + 5;
+  function drawTitleRow_(){
+    doc.setFillColor(255, 239, 0);
+    doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9, "F");
+    doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(title, pageW / 2, y + 6, { align: "center" });
+    y += 9;
+  }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.text(companyName || "HOTEL REPORT", textX, textY);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-
-  const metaLines = [];
-  if(contactName) metaLines.push(`Contact: ${contactName}`);
-  if(phone) metaLines.push(`Phone: ${phone}`);
-  if(address) metaLines.push(`Address: ${address}`);
-  if(gstin) metaLines.push(`GSTIN: ${gstin}`);
-  metaLines.push(`Generated: ${genDate}`);
-
-  textY += 4.5;
-  metaLines.forEach(line=>{
-    const wrapped = doc.splitTextToSize(line, pageW - textX - marginRight - 2);
-    wrapped.forEach(w=>{
-      textY += 4;
-      doc.text(String(w), textX, textY);
-    });
-  });
-
-  y += 32;
-
-  // title row
-  doc.setFillColor(255, 239, 0);
-  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9, "F");
-  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text(title, pageW / 2, y + 6, { align: "center" });
-
-  y += 9;
-
+  drawCompanyBlock_();
+  drawTitleRow_();
   const baseCols = [
     { key:"bookingDate", label:"BOOKING DATE", width:20 },
     { key:"bookerName",  label:"BOOKER NAME", width:27 },
@@ -210,10 +240,12 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
     y += headerH;
   }
 
-  function ensurePage_(needHeight){
+   function ensurePage_(needHeight){
     if(y + needHeight <= pageH - bottomMargin) return;
     doc.addPage("a4", "landscape");
     y = topMargin;
+    drawCompanyBlock_();
+    drawTitleRow_();
     drawHeader_();
   }
 
