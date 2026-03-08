@@ -538,10 +538,14 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">Check Out Date</div>
     <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
-           <div class="label" id="bk_room_label">Rooms + Tariff</div>
+                     <div class="label" id="bk_room_label">Rooms + Tariff</div>
     <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;">
-      <input class="input" id="bk_rooms_count" value="${esc_(b.rooms_count || (String(b.room_no||"").split(",").map(x=>x.trim()).filter(Boolean).length || ""))}" placeholder="No. of Rooms" inputmode="numeric" type="number" min="1" style="width:140px;" />
-      <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate / Room" inputmode="numeric" type="number" style="width:140px;" />
+      <div id="bk_rooms_count_wrap">
+        <input class="input" id="bk_rooms_count" value="${esc_(b.rooms_count || (String(b.room_no||"").split(",").map(x=>x.trim()).filter(Boolean).length || ""))}" placeholder="No. of Rooms" inputmode="numeric" type="number" min="1" style="width:140px;" />
+      </div>
+      <div id="bk_rate_wrap">
+        <input class="input" id="bk_rate" value="${esc_(b.rate||"")}" placeholder="Rate / Room" inputmode="numeric" type="number" style="width:140px;" />
+      </div>
     </div>
 
     <div id="bk_room_extras" style="margin-top:10px;">
@@ -601,13 +605,19 @@ function syncRoomUi_(){
   const rLabel = document.getElementById("bk_room_label");
   const rInputs = document.getElementById("bk_room_inputs");
   const rExtras = document.getElementById("bk_room_extras");
+  const roomsCountWrap = document.getElementById("bk_rooms_count_wrap");
+  const rateWrap = document.getElementById("bk_rate_wrap");
 
   if(t === "room"){
     if(rLabel) rLabel.innerText = "Rooms + Rate/room";
+    if(roomsCountWrap) roomsCountWrap.style.display = "block";
+    if(rateWrap) rateWrap.style.display = "block";
     if(rInputs) rInputs.style.display = "flex";
     if(rExtras) rExtras.style.display = "block";
   }else{
     if(rLabel) rLabel.innerText = "Event Rate";
+    if(roomsCountWrap) roomsCountWrap.style.display = "none";
+    if(rateWrap) rateWrap.style.display = "block";
     if(rInputs) rInputs.style.display = "none";
     if(rExtras) rExtras.style.display = "none";
     if(roomEl) roomEl.value = "";
