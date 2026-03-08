@@ -790,7 +790,7 @@ ${canInstallPwa ? `
     <div class="menuItem" data-menu="about">
       <div class="menuLeft">
         <div class="menuTitle">About</div>
-        <div class="menuSub">Latest Version: ${LATEST_VERSION})</div>
+        <div class="menuSub">Latest Version: ${LATEST_VERSION}</div>
       </div>
       <div class="menuArrow">›</div>
     </div>
@@ -1175,7 +1175,7 @@ if(laterBtn){
     try{
       window.location.reload();
     }catch(e){}
-  }, 1200);
+  }, 2200);
 });
     }
   }catch(e){
@@ -1356,6 +1356,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
