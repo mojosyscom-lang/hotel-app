@@ -57,6 +57,13 @@ async function getCompanyLogoDataUrl_(){
 }
 
 async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
+  const jspdfNs = window.jspdf;
+  const jsPDF = jspdfNs && jspdfNs.jsPDF;
+  if(!jsPDF){
+    alert("PDF library not loaded. Please refresh once and try again.");
+    return;
+  }
+
   const db = store.get();
   const company = db.company || {};
 
@@ -73,125 +80,230 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
 
   const countLabel = mode === "event" ? "NO.DAY" : "NO.NIGHT";
 
-  const html = `
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${esc_(title)}</title>
-  <style>
-    @page { size: A4 landscape; margin: 10mm; }
-    html, body { margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; color:#111; }
-    body { padding: 0; }
-    .wrap { width: 100%; }
-    table.report { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; }
-    table.report th, table.report td { border:1px solid #777; padding:6px 5px; text-align:center; vertical-align:middle; word-wrap:break-word; }
-    thead { display: table-header-group; }
-    tfoot { display: table-footer-group; }
-    .tophead { background:#ffef00; font-weight:800; }
-    .titleRow th { background:#ffef00; font-size:15px; padding:8px; }
-    .metaCell { padding:0 !important; }
-    .metaWrap { display:flex; align-items:center; gap:12px; padding:10px; text-align:left; min-height:84px; }
-    .logoBox { width:74px; min-width:74px; height:74px; display:flex; align-items:center; justify-content:center; border:1px solid #bbb; background:#fff; overflow:hidden; }
-    .logoBox img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-    .companyBlock { flex:1; }
-    .companyName { font-size:18px; font-weight:800; line-height:1.2; margin-bottom:4px; }
-    .metaLine { font-size:11px; line-height:1.35; }
-    .subTitle { font-size:11px; font-weight:600; }
-    .totals { background:#fff59d; font-weight:800; }
-    .empty { padding:12px; text-align:center; }
-    .right { text-align:right; }
-    .left { text-align:left; }
-    .small { font-size:10px; }
-    @media print {
-      .no-print { display:none !important; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <table class="report">
-      <thead>
-        <tr>
-          <th colspan="12" class="metaCell">
-            <div class="metaWrap">
-              <div class="logoBox">
-                ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" />` : ``}
-              </div>
-              <div class="companyBlock">
-                <div class="companyName">${esc_(companyName || "HOTEL REPORT")}</div>
-                ${contactName ? `<div class="metaLine"><b>Contact:</b> ${esc_(contactName)}</div>` : ``}
-                ${phone ? `<div class="metaLine"><b>Phone:</b> ${esc_(phone)}</div>` : ``}
-                ${address ? `<div class="metaLine"><b>Address:</b> ${esc_(address)}</div>` : ``}
-                ${gstin ? `<div class="metaLine"><b>GSTIN:</b> ${esc_(gstin)}</div>` : ``}
-                <div class="metaLine"><b>Generated:</b> ${esc_(genDate)}</div>
-              </div>
-            </div>
-          </th>
-        </tr>
-        <tr class="titleRow">
-          <th colspan="12">${esc_(title)}</th>
-        </tr>
-        <tr>
-          <th class="tophead">BOOKING DATE</th>
-          <th class="tophead">BOOKER NAME</th>
-          <th class="tophead">MOBILE NUMBER</th>
-          <th class="tophead">GUEST NAME</th>
-          <th class="tophead">COMPANY NAME</th>
-          <th class="tophead">CHECK IN</th>
-          <th class="tophead">CHECK OUT</th>
-          <th class="tophead">NO OF ROOMS</th>
-          <th class="tophead">${esc_(countLabel)}</th>
-          <th class="tophead">TARIFF</th>
-          <th class="tophead">AMOUNT</th>
-          <th class="tophead">REMARK</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rowsHtml || `<tr><td colspan="12" class="empty">No data found.</td></tr>`}
-        ${totalsRowHtml}
-      </tbody>
-    </table>
-  </div>
-</body>
-</html>
-  `;
-
-  const oldFrame = document.getElementById("booking_pdf_frame");
-  if(oldFrame) oldFrame.remove();
-
-  const frame = document.createElement("iframe");
-  frame.id = "booking_pdf_frame";
-  frame.style.position = "fixed";
-  frame.style.right = "0";
-  frame.style.bottom = "0";
-  frame.style.width = "0";
-  frame.style.height = "0";
-  frame.style.border = "0";
-  frame.setAttribute("aria-hidden", "true");
-  document.body.appendChild(frame);
-
-  const doc = frame.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  await new Promise(resolve => {
-    const done = ()=> setTimeout(resolve, 250);
-    if(frame.contentWindow.document.readyState === "complete") done();
-    else frame.onload = done;
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+    compress: true
   });
 
-  try{
-    frame.contentWindow.focus();
-    frame.contentWindow.print();
-  }finally{
-    setTimeout(()=>{
-      try{ frame.remove(); }catch(e){}
-    }, 1500);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  const marginLeft = 8;
+  const marginRight = 8;
+  const topMargin = 8;
+  const bottomMargin = 8;
+
+  let y = topMargin;
+
+  // outer header box
+  doc.setDrawColor(120);
+  doc.setLineWidth(0.2);
+  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 28);
+
+  // logo
+  if(logoDataUrl){
+    try{
+      doc.addImage(logoDataUrl, "PNG", marginLeft + 2, y + 2, 20, 20, undefined, "FAST");
+    }catch(e){
+      try{
+        doc.addImage(logoDataUrl, "JPEG", marginLeft + 2, y + 2, 20, 20, undefined, "FAST");
+      }catch(err){
+        console.warn("Logo add failed", err);
+      }
+    }
   }
+
+  // company block
+  let textX = marginLeft + 25;
+  let textY = y + 5;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text(companyName || "HOTEL REPORT", textX, textY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+
+  const metaLines = [];
+  if(contactName) metaLines.push(`Contact: ${contactName}`);
+  if(phone) metaLines.push(`Phone: ${phone}`);
+  if(address) metaLines.push(`Address: ${address}`);
+  if(gstin) metaLines.push(`GSTIN: ${gstin}`);
+  metaLines.push(`Generated: ${genDate}`);
+
+  textY += 4.5;
+  metaLines.forEach(line=>{
+    const wrapped = doc.splitTextToSize(line, pageW - textX - marginRight - 2);
+    wrapped.forEach(w=>{
+      textY += 4;
+      doc.text(String(w), textX, textY);
+    });
+  });
+
+  y += 32;
+
+  // title row
+  doc.setFillColor(255, 239, 0);
+  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9, "F");
+  doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 9);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text(title, pageW / 2, y + 6, { align: "center" });
+
+  y += 9;
+
+  const cols = [
+    { key:"bookingDate", label:"BOOKING DATE", width:20 },
+    { key:"bookerName",  label:"BOOKER NAME", width:27 },
+    { key:"mobile",      label:"MOBILE NUMBER", width:24 },
+    { key:"guestName",   label:"GUEST NAME", width:27 },
+    { key:"companyName", label:"COMPANY NAME", width:28 },
+    { key:"checkIn",     label:"CHECK IN", width:18 },
+    { key:"checkOut",    label:"CHECK OUT", width:18 },
+    { key:"noOfRooms",   label:"NO OF ROOMS", width:16 },
+    { key:"countVal",    label:countLabel, width:16 },
+    { key:"tariff",      label:"TARIFF", width:16 },
+    { key:"amount",      label:"AMOUNT", width:18 },
+    { key:"remark",      label:"REMARK", width:31 }
+  ];
+
+  function drawHeader_(){
+    let x = marginLeft;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.2);
+    cols.forEach(col=>{
+      doc.setFillColor(255, 239, 0);
+      doc.rect(x, y, col.width, 8, "F");
+      doc.rect(x, y, col.width, 8);
+      const lines = doc.splitTextToSize(col.label, col.width - 1.5);
+      const textY0 = y + 3.3 + (lines.length > 1 ? -0.8 : 1.2);
+      lines.slice(0, 2).forEach((line, idx)=>{
+        doc.text(String(line), x + col.width/2, textY0 + (idx * 2.8), { align:"center" });
+      });
+      x += col.width;
+    });
+    y += 8;
+  }
+
+  function ensurePage_(needHeight){
+    if(y + needHeight <= pageH - bottomMargin) return;
+    doc.addPage("a4", "landscape");
+    y = topMargin;
+    drawHeader_();
+  }
+
+  drawHeader_();
+
+  const rowsData = filtered.map(b=>{
+    const bookingDate = fmtDate_(b && (b.created_at ? String(b.created_at).slice(0,10) : b.start_date) || "");
+    const bookerName = String(b && b.booker_name || "").trim();
+    const mobile = String(b && b.contact_number || "").trim();
+    const guestName = String(b && b.booker_name || "").trim();
+    const companyName = String(b && b.title || "").trim();
+    const checkIn = fmtDate_(b && b.start_date || "");
+    const checkOut = fmtDate_(b && b.end_date || "");
+    const noOfRooms = String(roomsCount_(b));
+    const countVal = String(mode === "event" ? eventDays_(b) : roomNightUnits_(b));
+    const tariff = String(Number(b && b.rate) || 0);
+    const amount = String(totalAmount_(b));
+    const remark = String(b && b.note || "").trim();
+
+    return {
+      bookingDate,
+      bookerName,
+      mobile,
+      guestName,
+      companyName,
+      checkIn,
+      checkOut,
+      noOfRooms,
+      countVal,
+      tariff,
+      amount,
+      remark
+    };
+  });
+
+  function drawRow_(row, isTotals){
+    const prepared = cols.map(col=>{
+      const txt = String(row[col.key] || "");
+      return doc.splitTextToSize(txt, col.width - 1.5);
+    });
+
+    const maxLines = Math.max(1, ...prepared.map(lines=>lines.length));
+    const rowH = Math.max(7, maxLines * 3.6 + 1.6);
+
+    ensurePage_(rowH);
+
+    let x = marginLeft;
+
+    if(isTotals){
+      doc.setFillColor(255, 245, 157);
+      doc.rect(marginLeft, y, pageW - marginLeft - marginRight, rowH, "F");
+    }
+
+    doc.setFont("helvetica", isTotals ? "bold" : "normal");
+    doc.setFontSize(8);
+
+    prepared.forEach((lines, idx)=>{
+      const col = cols[idx];
+      doc.rect(x, y, col.width, rowH);
+
+      const startY = y + 3.8;
+      lines.slice(0, 4).forEach((line, lineIdx)=>{
+        doc.text(String(line), x + col.width/2, startY + (lineIdx * 3.2), { align:"center" });
+      });
+
+      x += col.width;
+    });
+
+    y += rowH;
+  }
+
+  if(!rowsData.length){
+    ensurePage_(8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.rect(marginLeft, y, pageW - marginLeft - marginRight, 8);
+    doc.text("No data found.", pageW / 2, y + 5, { align:"center" });
+    y += 8;
+  }else{
+    rowsData.forEach(r=> drawRow_(r, false));
+
+    const totalRooms = filtered.reduce((sum, b)=> sum + roomsCount_(b), 0);
+    const totalRoomNights = filtered.reduce((sum, b)=> sum + roomNightUnits_(b), 0);
+    const totalDays = filtered.reduce((sum, b)=> sum + eventDays_(b), 0);
+    const totalAmount = filtered.reduce((sum, b)=> sum + totalAmount_(b), 0);
+
+    drawRow_({
+      bookingDate: "",
+      bookerName: "",
+      mobile: "",
+      guestName: "",
+      companyName: "",
+      checkIn: "TOTAL",
+      checkOut: "",
+      noOfRooms: String(totalRooms),
+      countVal: String(mode === "event" ? totalDays : totalRoomNights),
+      tariff: "-",
+      amount: String(totalAmount),
+      remark: ""
+    }, true);
+  }
+
+  const safeTitle = String(title || "booking-report")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s/g, "_");
+
+  doc.save(`${safeTitle || "booking-report"}.pdf`);
 }
+
+
+
 function roomsCount_(b){
   const direct = Number(b && b.rooms_count);
   if(isFinite(direct) && direct > 0) return direct;
@@ -413,11 +525,11 @@ export function renderBookingTablePage(root, opts){
     });
   }
 
-      if(pdfBtn){
+    if(pdfBtn){
     pdfBtn.addEventListener("click", async ()=>{
       pdfBtn.disabled = true;
       pdfBtn.style.opacity = "0.6";
-      pdfBtn.textContent = "Generating...";
+      pdfBtn.textContent = "Generating PDF...";
 
       try{
         await openBookingPdf_({
@@ -430,8 +542,8 @@ export function renderBookingTablePage(root, opts){
           title
         });
       }catch(e){
-        console.error("PDF print failed", e);
-        alert("Could not open print view. Please try again.");
+        console.error("PDF generation failed", e);
+        alert("Could not generate PDF. Please try again.");
       }finally{
         pdfBtn.disabled = false;
         pdfBtn.style.opacity = "";
