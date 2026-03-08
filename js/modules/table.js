@@ -56,9 +56,7 @@ async function getCompanyLogoDataUrl_(){
   }
 }
 
-// async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
-
-async function openBookingPdf_({ win, mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
+async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
   const db = store.get();
   const company = db.company || {};
 
@@ -156,27 +154,44 @@ async function openBookingPdf_({ win, mode, monthKey, search, filtered, totalsRo
       </tbody>
     </table>
   </div>
- <script>
-    window.onload = function(){
-      setTimeout(function(){
-        window.print();
-        window.close();
-      }, 250);
-    };
-  </script>
 </body>
 </html>
   `;
 
-   if(!win || win.closed){
-    alert("Popup blocked. Please allow popups and try again.");
-    return;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-}
+  const oldFrame = document.getElementById("booking_pdf_frame");
+  if(oldFrame) oldFrame.remove();
 
+  const frame = document.createElement("iframe");
+  frame.id = "booking_pdf_frame";
+  frame.style.position = "fixed";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.setAttribute("aria-hidden", "true");
+  document.body.appendChild(frame);
+
+  const doc = frame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  await new Promise(resolve => {
+    const done = ()=> setTimeout(resolve, 250);
+    if(frame.contentWindow.document.readyState === "complete") done();
+    else frame.onload = done;
+  });
+
+  try{
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  }finally{
+    setTimeout(()=>{
+      try{ frame.remove(); }catch(e){}
+    }, 1500);
+  }
+}
 function roomsCount_(b){
   const direct = Number(b && b.rooms_count);
   if(isFinite(direct) && direct > 0) return direct;
@@ -398,19 +413,14 @@ export function renderBookingTablePage(root, opts){
     });
   }
 
-     if(pdfBtn){
+      if(pdfBtn){
     pdfBtn.addEventListener("click", async ()=>{
-      const win = window.open("", "_blank");
-      if(!win){
-        alert("Popup blocked. Please allow popups and try again.");
-        return;
-      }
-
       pdfBtn.disabled = true;
       pdfBtn.style.opacity = "0.6";
+      pdfBtn.textContent = "Generating...";
+
       try{
         await openBookingPdf_({
-          win,
           mode,
           monthKey,
           search,
@@ -420,11 +430,12 @@ export function renderBookingTablePage(root, opts){
           title
         });
       }catch(e){
-        try{ win.close(); }catch(_) {}
-        throw e;
+        console.error("PDF print failed", e);
+        alert("Could not open print view. Please try again.");
       }finally{
         pdfBtn.disabled = false;
         pdfBtn.style.opacity = "";
+        pdfBtn.textContent = "Generate PDF";
       }
     });
   }
