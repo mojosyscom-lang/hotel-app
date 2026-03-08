@@ -965,7 +965,7 @@ function renderAbout_(){
     <div class="card">
       <h2>About</h2>
       <p class="small">Hotel CRM — Offline-first</p>
-      <div class="small"><b>Build:</b> ${BUILD_VERSION}</div>
+      <div class="small" hidden/><b>Build:</b> ${BUILD_VERSION}</div>
       <div class="small"><b>Latest:</b> ${LATEST_VERSION}</div>
 
       <div class="btnRow">
@@ -1136,8 +1136,9 @@ if(laterBtn){
   });
 }
 
-    bar.querySelector("#btn_reload_update").addEventListener("click", ()=>{
-  // one tap update for your friend
+
+	
+ bar.querySelector("#btn_reload_update").addEventListener("click", async ()=>{
   localStorage.setItem("hotelcrm_dismissed_update", latest);
 
   const btn = bar.querySelector("#btn_reload_update");
@@ -1146,14 +1147,35 @@ if(laterBtn){
     btn.textContent = "Updating…";
   }
 
-  // show a tiny “installing” feel
   bar.classList.add("updating");
 
+  try{
+    if("caches" in window){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+
+    if("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg => reg.unregister()));
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+  }catch(e){
+    console.warn("Hard refresh cleanup failed", e);
+  }
+
+  const u = new URL(window.location.href);
+  u.searchParams.set("r", Date.now().toString());
+  u.searchParams.set("update", latest);
+
+  window.location.replace(u.toString());
+
   setTimeout(()=>{
-    const u = new URL(window.location.href);
-    u.searchParams.set("r", Date.now().toString());
-    window.location.replace(u.toString());
-  }, 2200);
+    try{
+      window.location.reload();
+    }catch(e){}
+  }, 1200);
 });
     }
   }catch(e){
@@ -1334,6 +1356,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
