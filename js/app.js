@@ -790,7 +790,7 @@ ${canInstallPwa ? `
     <div class="menuItem" data-menu="about">
       <div class="menuLeft">
         <div class="menuTitle">About</div>
-        <div class="menuSub">Version: ${BUILD_VERSION} (latest: ${LATEST_VERSION})</div>
+        <div class="menuSub">Latest Version: ${LATEST_VERSION})</div>
       </div>
       <div class="menuArrow">›</div>
     </div>
@@ -1123,7 +1123,7 @@ if(dismissed === latest) return;
       bar.innerHTML = `
   <div class="small"><b>New Version available</b> (v${latest})</div>
   <button class="btn primary" id="btn_reload_update" type="button" style="width:100%;">Update</button>
-  <button class="btn" id="btn_dismiss_update" type="button" style="width:100%;">Later</button>
+  
 `;
       document.body.prepend(bar);
 
@@ -1356,6 +1356,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
