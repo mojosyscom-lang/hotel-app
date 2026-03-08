@@ -114,6 +114,7 @@ const SETTINGS_KEY = "hotelcrm_settings_v1";
 // App Version
 const BUILD_VERSION = "1.0.0"; // ✅ this is the version of the JS bundle you are running
 let LATEST_VERSION = "0.0.0";  // ✅ loaded from version.json
+let UPDATE_INSTALLING = false;
 
 const DEVICE_KEY = "hotelcrm_device_id_v1";
 
@@ -1088,6 +1089,7 @@ if(latest === BUILD_VERSION) return;
 // If user already dismissed this exact latest version, don't show again
 const dismissed = String(localStorage.getItem("hotelcrm_dismissed_update") || "");
 if(dismissed === latest) return;
+	  if(UPDATE_INSTALLING) return;
 
     // show banner
     let bar = document.getElementById("update_bar");
@@ -1118,45 +1120,62 @@ if(dismissed === latest) return;
   align-items: stretch;
   gap: 12px;
 
-  padding: 18px 16px;
+    padding: 18px 16px;
+  opacity: 1;
+  transition: opacity 220ms ease, transform 220ms ease;
 `;
-          bar.innerHTML = `
-  <div style="display:flex; align-items:center; gap:12px;">
-    <div id="update_spinner" style="
-      width:22px; height:22px; border-radius:50%;
-      border:3px solid rgba(0,0,0,0.12);
+                   bar.innerHTML = `
+  <div id="update_idle_view" style="display:flex; flex-direction:column; gap:12px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div id="update_idle_dot" style="
+        width:14px; height:14px; border-radius:50%;
+        background: var(--accent, #0b7a5c);
+        flex:0 0 auto;
+      "></div>
+
+      <div style="min-width:0;">
+        <div class="small" style="font-size:14px;"><b>New Version available</b> (v${latest})</div>
+        <div class="small" id="update_status_text" style="margin-top:4px; opacity:0.8;">Ready to install update</div>
+      </div>
+    </div>
+
+    <button class="btn primary" id="btn_reload_update" type="button" style="width:100%;">Update</button>
+  </div>
+
+  <div id="update_install_view" style="display:none; text-align:center; padding:10px 4px 2px;">
+    <div id="update_spinner_big" style="
+      width:42px; height:42px; margin:0 auto 14px auto; border-radius:50%;
+      border:4px solid rgba(0,0,0,0.12);
       border-top-color: var(--accent, #0b7a5c);
-      animation: hotelcrmSpin 0.9s linear infinite;
-      flex:0 0 auto;
+      animation:none;
     "></div>
 
-    <div style="min-width:0;">
-      <div class="small" style="font-size:14px;"><b>New Version available</b> (v${latest})</div>
-      <div class="small" id="update_status_text" style="margin-top:4px; opacity:0.8;">Ready to install update</div>
+    <div style="font-size:16px; font-weight:700;">Installing update…</div>
+    <div id="update_install_text" class="small" style="margin-top:8px; opacity:0.8;">Preparing update…</div>
+
+    <div style="height:8px; border-radius:999px; background:rgba(0,0,0,0.08); overflow:hidden; margin-top:14px;">
+      <div id="update_progress_bar" style="
+        width:0%;
+        height:100%;
+        border-radius:999px;
+        background: linear-gradient(90deg, #16a34a, #22c55e);
+        transition: width 500ms ease;
+      "></div>
     </div>
   </div>
-
-  <div style="height:8px; border-radius:999px; background:rgba(0,0,0,0.08); overflow:hidden;">
-    <div id="update_progress_bar" style="
-      width:0%;
-      height:100%;
-      border-radius:999px;
-      background: linear-gradient(90deg, #16a34a, #22c55e);
-      transition: width 500ms ease;
-    "></div>
-  </div>
-
-  <button class="btn primary" id="btn_reload_update" type="button" style="width:100%;">Update</button>
 `;
       document.body.prepend(bar);
 
-      if(!document.getElementById("hotelcrm_update_anim_style")){
+          if(!document.getElementById("hotelcrm_update_anim_style")){
         const st = document.createElement("style");
         st.id = "hotelcrm_update_anim_style";
         st.textContent = `
           @keyframes hotelcrmSpin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+          }
+          #update_bar.installing #update_spinner_big {
+            animation: hotelcrmSpin 0.9s linear infinite;
           }
         `;
         document.head.appendChild(st);
@@ -1176,49 +1195,56 @@ if(laterBtn){
 
 	
  bar.querySelector("#btn_reload_update").addEventListener("click", async ()=>{
+  if(UPDATE_INSTALLING) return;
+  UPDATE_INSTALLING = true;
+
   localStorage.setItem("hotelcrm_dismissed_update", latest);
 
-  const btn = bar.querySelector("#btn_reload_update");
-  const statusEl = bar.querySelector("#update_status_text");
+  const idleView = bar.querySelector("#update_idle_view");
+  const installView = bar.querySelector("#update_install_view");
+  const installText = bar.querySelector("#update_install_text");
   const progEl = bar.querySelector("#update_progress_bar");
 
   function setStage_(text, pct){
-    if(statusEl) statusEl.textContent = text;
+    if(installText) installText.textContent = text;
     if(progEl) progEl.style.width = pct + "%";
   }
 
-  if(btn){
-    btn.disabled = true;
-    btn.textContent = "Installing update…";
-  }
+  if(idleView) idleView.style.display = "none";
+  if(installView) installView.style.display = "block";
 
   bar.classList.add("updating");
+  bar.classList.add("installing");
 
   try{
     sessionStorage.removeItem("hotelcrm_update_refresh_count");
 
-    setStage_("Preparing update…", 12);
+    setStage_("Preparing update…", 10);
     await new Promise(resolve => setTimeout(resolve, 700));
 
-    setStage_("Clearing old cached files…", 34);
+    setStage_("Clearing old cached files…", 32);
     if("caches" in window){
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
     await new Promise(resolve => setTimeout(resolve, 700));
 
-    setStage_("Refreshing app engine…", 62);
+    setStage_("Refreshing app engine…", 58);
     if("serviceWorker" in navigator){
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(reg => reg.unregister()));
     }
     await new Promise(resolve => setTimeout(resolve, 900));
 
-    setStage_("Installing latest version…", 82);
+    setStage_("Installing latest version…", 84);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     setStage_("Finishing update…", 100);
-    await new Promise(resolve => setTimeout(resolve, 650));
+    await new Promise(resolve => setTimeout(resolve, 550));
+
+    bar.style.opacity = "0";
+    bar.style.transform = "translate(-50%, -48%)";
+    await new Promise(resolve => setTimeout(resolve, 220));
   }catch(e){
     console.warn("Hard refresh cleanup failed", e);
   }
@@ -1433,6 +1459,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
