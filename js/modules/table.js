@@ -154,7 +154,7 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
 
   y += 9;
 
-  const cols = [
+  const baseCols = [
     { key:"bookingDate", label:"BOOKING DATE", width:20 },
     { key:"bookerName",  label:"BOOKER NAME", width:27 },
     { key:"mobile",      label:"MOBILE NUMBER", width:24 },
@@ -169,22 +169,45 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
     { key:"remark",      label:"REMARK", width:31 }
   ];
 
-  function drawHeader_(){
+  const usableTableWidth = pageW - marginLeft - marginRight;
+  const baseTotalWidth = baseCols.reduce((sum, c)=> sum + c.width, 0);
+  const scale = usableTableWidth / baseTotalWidth;
+
+  const cols = baseCols.map((c, idx)=>({
+    ...c,
+    width: idx === baseCols.length - 1
+      ? +(usableTableWidth - baseCols.slice(0, -1).reduce((sum, x)=> sum + (x.width * scale), 0)).toFixed(2)
+      : +(c.width * scale).toFixed(2)
+  }));
+
+   function drawHeader_(){
     let x = marginLeft;
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.2);
-    cols.forEach(col=>{
+
+    const prepared = cols.map(col => doc.splitTextToSize(col.label, col.width - 1.5));
+    const maxLines = Math.max(1, ...prepared.map(lines => lines.length));
+    const headerH = Math.max(10, maxLines * 3.4 + 2.5);
+
+    prepared.forEach((lines, idx)=>{
+      const col = cols[idx];
+
       doc.setFillColor(255, 239, 0);
-      doc.rect(x, y, col.width, 8, "F");
-      doc.rect(x, y, col.width, 8);
-      const lines = doc.splitTextToSize(col.label, col.width - 1.5);
-      const textY0 = y + 3.3 + (lines.length > 1 ? -0.8 : 1.2);
-      lines.slice(0, 2).forEach((line, idx)=>{
-        doc.text(String(line), x + col.width/2, textY0 + (idx * 2.8), { align:"center" });
+      doc.rect(x, y, col.width, headerH, "F");
+      doc.rect(x, y, col.width, headerH);
+
+      const blockH = lines.length * 3.2;
+      const startY = y + ((headerH - blockH) / 2) + 2.6;
+
+      lines.slice(0, 3).forEach((line, lineIdx)=>{
+        doc.text(String(line), x + col.width / 2, startY + (lineIdx * 3.2), { align:"center" });
       });
+
       x += col.width;
     });
-    y += 8;
+
+    y += headerH;
   }
 
   function ensurePage_(needHeight){
@@ -252,8 +275,14 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
       doc.rect(x, y, col.width, rowH);
 
       const startY = y + 3.8;
+          const isLeftAlign = (col.key === "bookerName" || col.key === "guestName" || col.key === "companyName" || col.key === "remark");
+
       lines.slice(0, 4).forEach((line, lineIdx)=>{
-        doc.text(String(line), x + col.width/2, startY + (lineIdx * 3.2), { align:"center" });
+        if(isLeftAlign){
+          doc.text(String(line), x + 1.5, startY + (lineIdx * 3.2));
+        }else{
+          doc.text(String(line), x + col.width/2, startY + (lineIdx * 3.2), { align:"center" });
+        }
       });
 
       x += col.width;
