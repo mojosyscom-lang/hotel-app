@@ -1120,12 +1120,49 @@ if(dismissed === latest) return;
 
   padding: 18px 16px;
 `;
-      bar.innerHTML = `
-  <div class="small"><b>New Version available</b> (v${latest})</div>
+          bar.innerHTML = `
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div id="update_spinner" style="
+      width:22px; height:22px; border-radius:50%;
+      border:3px solid rgba(0,0,0,0.12);
+      border-top-color: var(--accent, #0b7a5c);
+      animation: hotelcrmSpin 0.9s linear infinite;
+      flex:0 0 auto;
+    "></div>
+
+    <div style="min-width:0;">
+      <div class="small" style="font-size:14px;"><b>New Version available</b> (v${latest})</div>
+      <div class="small" id="update_status_text" style="margin-top:4px; opacity:0.8;">Ready to install update</div>
+    </div>
+  </div>
+
+  <div style="height:8px; border-radius:999px; background:rgba(0,0,0,0.08); overflow:hidden;">
+    <div id="update_progress_bar" style="
+      width:0%;
+      height:100%;
+      border-radius:999px;
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      transition: width 500ms ease;
+    "></div>
+  </div>
+
   <button class="btn primary" id="btn_reload_update" type="button" style="width:100%;">Update</button>
-  
 `;
       document.body.prepend(bar);
+
+      if(!document.getElementById("hotelcrm_update_anim_style")){
+        const st = document.createElement("style");
+        st.id = "hotelcrm_update_anim_style";
+        st.textContent = `
+          @keyframes hotelcrmSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `;
+        document.head.appendChild(st);
+      }
+
+		
 
 		const laterBtn = bar.querySelector("#btn_dismiss_update");
 if(laterBtn){
@@ -1142,29 +1179,46 @@ if(laterBtn){
   localStorage.setItem("hotelcrm_dismissed_update", latest);
 
   const btn = bar.querySelector("#btn_reload_update");
+  const statusEl = bar.querySelector("#update_status_text");
+  const progEl = bar.querySelector("#update_progress_bar");
+
+  function setStage_(text, pct){
+    if(statusEl) statusEl.textContent = text;
+    if(progEl) progEl.style.width = pct + "%";
+  }
+
   if(btn){
     btn.disabled = true;
-    btn.textContent = "Installing update… Please wait";
+    btn.textContent = "Installing update…";
   }
 
   bar.classList.add("updating");
 
   try{
-    // reset one-time refresh counter for the new page
     sessionStorage.removeItem("hotelcrm_update_refresh_count");
 
+    setStage_("Preparing update…", 12);
+    await new Promise(resolve => setTimeout(resolve, 700));
+
+    setStage_("Clearing old cached files…", 34);
     if("caches" in window){
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
+    await new Promise(resolve => setTimeout(resolve, 700));
 
+    setStage_("Refreshing app engine…", 62);
     if("serviceWorker" in navigator){
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(reg => reg.unregister()));
     }
+    await new Promise(resolve => setTimeout(resolve, 900));
 
-    // wait a little longer so browser settles
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    setStage_("Installing latest version…", 82);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setStage_("Finishing update…", 100);
+    await new Promise(resolve => setTimeout(resolve, 650));
   }catch(e){
     console.warn("Hard refresh cleanup failed", e);
   }
@@ -1379,6 +1433,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
