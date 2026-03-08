@@ -1144,12 +1144,15 @@ if(laterBtn){
   const btn = bar.querySelector("#btn_reload_update");
   if(btn){
     btn.disabled = true;
-    btn.textContent = "Updating…";
+    btn.textContent = "Installing update… Please wait";
   }
 
   bar.classList.add("updating");
 
   try{
+    // reset one-time refresh counter for the new page
+    sessionStorage.removeItem("hotelcrm_update_refresh_count");
+
     if("caches" in window){
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
@@ -1160,7 +1163,8 @@ if(laterBtn){
       await Promise.all(regs.map(reg => reg.unregister()));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    // wait a little longer so browser settles
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }catch(e){
     console.warn("Hard refresh cleanup failed", e);
   }
@@ -1168,14 +1172,9 @@ if(laterBtn){
   const u = new URL(window.location.href);
   u.searchParams.set("r", Date.now().toString());
   u.searchParams.set("update", latest);
+  u.searchParams.set("hard", "1");
 
   window.location.replace(u.toString());
-
-  setTimeout(()=>{
-    try{
-      window.location.reload();
-    }catch(e){}
-  }, 2200);
 });
     }
   }catch(e){
@@ -1275,9 +1274,33 @@ async function init_(){
 
 
 	
-  applyTheme_();
-	await loadLatestVersion_();
-await checkForUpdate_();
+   applyTheme_();
+  await loadLatestVersion_();
+  await checkForUpdate_();
+
+  try{
+    const u = new URL(window.location.href);
+    const hard = String(u.searchParams.get("hard") || "");
+    const count = Number(sessionStorage.getItem("hotelcrm_update_refresh_count") || "0");
+
+    if(hard === "1" && count < 1){
+      sessionStorage.setItem("hotelcrm_update_refresh_count", String(count + 1));
+
+      setTimeout(()=>{
+        try{
+          const u2 = new URL(window.location.href);
+          u2.searchParams.set("r", Date.now().toString());
+          window.location.replace(u2.toString());
+        }catch(e){
+          console.warn("Post-update reload failed", e);
+        }
+      }, 2500);
+    }
+  }catch(e){
+    console.warn("Post-update refresh logic failed", e);
+  }
+
+	
   // Always render header first
   console.log("✅ init_() running, now calling renderHeader()");
   renderHeader();
@@ -1356,6 +1379,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
