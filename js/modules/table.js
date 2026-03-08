@@ -56,7 +56,9 @@ async function getCompanyLogoDataUrl_(){
   }
 }
 
-async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
+// async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
+
+async function openBookingPdf_({ win, mode, monthKey, search, filtered, totalsRowHtml, rowsHtml, title }){
   const db = store.get();
   const company = db.company || {};
 
@@ -166,14 +168,13 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
 </html>
   `;
 
-  const w = window.open("", "_blank");
-  if(!w){
+   if(!win || win.closed){
     alert("Popup blocked. Please allow popups and try again.");
     return;
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 function roomsCount_(b){
@@ -397,12 +398,19 @@ export function renderBookingTablePage(root, opts){
     });
   }
 
-    if(pdfBtn){
+     if(pdfBtn){
     pdfBtn.addEventListener("click", async ()=>{
+      const win = window.open("", "_blank");
+      if(!win){
+        alert("Popup blocked. Please allow popups and try again.");
+        return;
+      }
+
       pdfBtn.disabled = true;
       pdfBtn.style.opacity = "0.6";
       try{
         await openBookingPdf_({
+          win,
           mode,
           monthKey,
           search,
@@ -411,6 +419,9 @@ export function renderBookingTablePage(root, opts){
           rowsHtml: rows,
           title
         });
+      }catch(e){
+        try{ win.close(); }catch(_) {}
+        throw e;
       }finally{
         pdfBtn.disabled = false;
         pdfBtn.style.opacity = "";
