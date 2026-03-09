@@ -125,14 +125,18 @@ export function renderDashboard(root){
 
     return sum + roomsCount_(b);
   }, 0);
-  const eventCount = bookingsArr.filter(b=>{
+  const eventCount = bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
     const e = String(b && b.end_date || "");
-    return String(b && b.type || "") === "event"
-      && !!e
-      && e >= todayIso
-      && monthKeyFromIso_(s) === currentMonthKey;
-  }).length;
+    if(String(b && b.type || "") !== "event") return sum;
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    return sum + 1;
+  }, 0);
 
 
   // Helpers inline (no new exported functions)
@@ -177,22 +181,76 @@ export function renderDashboard(root){
     return sum + (safeNights * roomsCount_(b));
   }, 0);
 
-  const preBookedEvents = bookingsArr.filter(b=>{
-    const e = String(b && b.end_date || "");
-    return isEvent(b) && e && e >= todayIso;
-  }).length;
+   const preBookedEvents = bookingsArr.reduce((sum,b)=>{
+    if(!isEvent(b)) return sum;
 
-  // Monthly revenue directly from stored total_amount
-  const roomRevenueMonth = bookingsArr.reduce((sum,b)=>{
-    if(!isRoom(b)) return sum;
-    if(monthKeyFromIso_(b && b.start_date) !== currentMonthKey) return sum;
-    return sum + totalAmount_(b);
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    const start = new Date(overlapStart + "T00:00:00");
+    const end = new Date(overlapEnd + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end)) return sum;
+
+    const overlapDays = Math.floor((end - start) / 86400000) + 1;
+    const safeDays = overlapDays > 0 ? overlapDays : 1;
+
+    return sum + safeDays;
   }, 0);
 
-    const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
+  // Monthly revenue directly from stored total_amount
+   const roomRevenueMonth = bookingsArr.reduce((sum,b)=>{
+    if(!isRoom(b)) return sum;
+
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    const start = new Date(s + "T00:00:00");
+    const end = new Date(e + "T00:00:00");
+    const ovStart = new Date(overlapStart + "T00:00:00");
+    const ovEnd = new Date(overlapEnd + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end) || !isFinite(ovStart) || !isFinite(ovEnd)) return sum;
+
+    const totalNights = Math.floor((end - start) / 86400000);
+    const overlapNights = Math.floor((ovEnd - ovStart) / 86400000);
+
+    const safeTotalNights = totalNights > 0 ? totalNights : 1;
+    const safeOverlapNights = overlapNights > 0 ? overlapNights : 1;
+
+    return sum + Math.round((totalAmount_(b) * safeOverlapNights) / safeTotalNights);
+  }, 0);
+
+       const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
     if(!isEvent(b)) return sum;
-    if(monthKeyFromIso_(b && b.start_date) !== currentMonthKey) return sum;
-    return sum + eventAmount_(b);
+
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    const start = new Date(s + "T00:00:00");
+    const end = new Date(e + "T00:00:00");
+    const ovStart = new Date(overlapStart + "T00:00:00");
+    const ovEnd = new Date(overlapEnd + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end) || !isFinite(ovStart) || !isFinite(ovEnd)) return sum;
+
+    const totalDays = Math.floor((end - start) / 86400000) + 1;
+    const overlapDays = Math.floor((ovEnd - ovStart) / 86400000) + 1;
+    if(totalDays <= 0 || overlapDays <= 0) return sum;
+
+    return sum + Math.round((eventAmount_(b) * overlapDays) / totalDays);
   }, 0);
 
 
