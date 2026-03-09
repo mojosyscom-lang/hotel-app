@@ -14,12 +14,17 @@ html:root{
   --btn-bg: rgba(255,255,255,0.06);
   --btn-text: rgba(255,255,255,0.92);
 
-  /* Top safe area */
-  --meta-theme: #0b0f17;
-
-  /* Dark header overlay */
+  /* unified dark header/safe-zone/status-bar */
   --header-overlay-1: rgba(8,12,20,.94);
   --header-overlay-2: rgba(12,18,30,.94);
+  --header-bg: linear-gradient(
+    90deg,
+    var(--header-overlay-1) 0%,
+    var(--header-overlay-2) 100%
+  );
+  --header-fg: #ffffff;
+  --header-statusbar: #080c14;
+  --meta-theme: var(--header-statusbar);
 }
 
 /* Page background */
@@ -165,7 +170,6 @@ td{
 .manageBtn,
 .calDay,
 .calNavBtn,
-.iconBtn,
 .menuItem{
   background: rgba(14,18,28,0.94);
   color: var(--text);
@@ -184,4 +188,10 @@ td{
 .badgeCount{
   background: rgba(255,255,255,0.08);
   color: var(--muted);
+}
+.iconBtn{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--header-fg) !important;
 }
