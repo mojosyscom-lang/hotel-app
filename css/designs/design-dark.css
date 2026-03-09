@@ -40,12 +40,32 @@ body{
   backdrop-filter: blur(10px);
 }
 
+.listItem,
+.sheet,
+#settings_sheet .sheet,
+#cal_sheet,
+.menuItem{
+  color: var(--text);
+}
+
 /* Inputs */
 .input, .select, textarea, .textarea{
   background: rgba(255,255,255,0.06);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
+}
+
+select,
+.select{
+  background-color: rgba(255,255,255,0.06);
+  color: var(--text);
+}
+
+select option,
+select optgroup{
+  background: #1a2230;
+  color: #ffffff;
 }
 .input::placeholder,
 .textarea::placeholder{
@@ -54,6 +74,30 @@ body{
 
 /* Small text */
 .small{ color: var(--muted); }
+
+/* Tables / white data surfaces in dark mode */
+table,
+thead,
+tbody,
+tr,
+th,
+td{
+  background: transparent;
+  color: var(--text);
+  border-color: rgba(255,255,255,0.10);
+}
+
+table{
+  background: rgba(14,18,28,0.94);
+}
+
+th{
+  color: rgba(255,255,255,0.78);
+}
+
+td{
+  color: var(--text);
+}
 
 /* Topbar */
 .topbar{
