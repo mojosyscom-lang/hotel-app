@@ -108,6 +108,10 @@ export function renderDashboard(root){
   const currentMonthKey = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthPrefix = monthNames[now.getMonth()];
+  const totalRooms = Number(db.company && db.company.total_rooms) || 0;
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-01`;
+  const monthEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(daysInMonth)}`;
 
     const roomCount = bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
@@ -191,10 +195,14 @@ export function renderDashboard(root){
     return sum + eventAmount_(b);
   }, 0);
 
+
+  /*  // this below might be culprit 
   const totalRooms = Number(db.company && db.company.total_rooms) || 0;
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const monthStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-01`;
   const monthEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(daysInMonth)}`;
+
+  */
 
   const bookedRoomNightsMonth = bookingsArr.reduce((sum,b)=>{
     if(!isRoom(b)) return sum;
