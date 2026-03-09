@@ -357,7 +357,7 @@ const payload = {
   device_id: legacyId,              // keep existing behavior
 device_id_stable: stableId,       // NEW (for reinstall restore)
 device_id_legacy: legacyId,       // NEW (explicit)
-  data: store.get(),
+  data: JSON.parse(JSON.stringify(store.get())),
   settings: s2,
   images: {
     company_logo: images.company_logo || "",
@@ -1324,6 +1324,7 @@ window.addEventListener("popstate", (e)=>{
 
 
 async function init_(){
+	  await store.init();
 
   // ✅ PWA Service Worker
   try{
@@ -1459,6 +1460,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
