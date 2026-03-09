@@ -46,7 +46,7 @@ html, body {
   --accent: #0b7a55;
   --accent2: #16a34a;
 
-  /* component tokens (design files may override) */
+   /* component tokens (design files may override) */
   --topbar-text: #ffffff;
   --chip-bg: rgba(255,255,255,0.08);
   --chip-border: rgba(255,255,255,0.18);
@@ -55,6 +55,19 @@ html, body {
   --btn-text: var(--text);
 
   --danger: #b91c1c;
+
+  /* unified header / safe-zone / status-bar tokens */
+  --header-overlay-1: rgba(11,58,42,.86);
+  --header-overlay-2: rgba(15,90,64,.86);
+  --header-bg: linear-gradient(
+    90deg,
+    var(--header-overlay-1) 0%,
+    var(--header-overlay-2) 100%
+  );
+  --header-fg: var(--topbar-text);
+  --header-border: var(--border);
+  --header-statusbar: #0b3a2a;
+  --meta-theme: var(--header-statusbar);
 }
 
 body{
@@ -65,29 +78,19 @@ body{
   position: relative;
 }
 
-/* Safe-zone header continuation (iOS + Android) */
+/* Safe-zone header continuation (iOS + Android DOM layer) */
 body::before{
   content: "";
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-
-  /* fill safe area only */
-  height: env(safe-area-inset-top);
-
+  height: calc(env(safe-area-inset-top) + 2px);
   z-index: 49;
   pointer-events: none;
-
-  background: linear-gradient(
-    90deg,
-    var(--header-overlay-1, rgba(11,58,42,.86)) 0%,
-    var(--header-overlay-2, rgba(15,90,64,.86)) 100%
-  );
-
-  background-color: var(--meta-theme, #0b3a2a);
+  background: var(--header-bg);
+  background-color: var(--header-statusbar);
 }
-
 /* ---------------- Header / Topbar ---------------- */
 
 .topbar{
@@ -97,20 +100,16 @@ body::before{
   top: 0;
   z-index: 50;
   padding: calc(env(safe-area-inset-top) + 10px) 14px 10px 14px;
-  color: var(--topbar-text);
-  border-bottom: 1px solid var(--border);
+    color: var(--header-fg);
+  border-bottom: 1px solid var(--header-border);
   transform: translateZ(0);
 
   display: flex;
   align-items: flex-start;
   gap: 10px;
 
-  background: linear-gradient(
-    90deg,
-    var(--header-overlay-1, rgba(11,58,42,.86)) 0%,
-    var(--header-overlay-2, rgba(15,90,64,.86)) 100%
-  );
-  background-color: var(--meta-theme, #0b3a2a);
+  background: var(--header-bg);
+  background-color: var(--header-statusbar);
 }
 
 .brand{
@@ -170,17 +169,7 @@ body::before{
   max-width: 100%;
 }
 
-/*
-.iconBtn{
-  float: right;
-  margin-top: -38px;
-  border: 0;
-  background: var(--chip-bg);
-  color: var(--topbar-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-*/
+
 
 .iconBtn{
   border: 0;
@@ -197,7 +186,15 @@ body::before{
   min-height: 44px;
   box-shadow: none;
   -webkit-tap-highlight-color: transparent;
+  appearance: none;
 }
+
+.iconBtn:focus,
+.iconBtn:focus-visible{
+  outline: none;
+  box-shadow: none;
+}
+
 .iconBtn:active{
   background: rgba(255,255,255,0.10);
 }
@@ -865,6 +862,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
