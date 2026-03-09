@@ -1338,6 +1338,17 @@ window.addEventListener("popstate", (e)=>{
 async function init_(){
 	  await store.init();
 
+
+	// --- Auto-repair stats index (self-healing) ---
+try{
+  const { rebuildStatsIndex } = await import("./modules/stats_engine.js");
+  const db0 = store.get();
+  const rebuilt = rebuildStatsIndex(db0);
+  await store.set(rebuilt);
+}catch(e){
+  console.warn("Stats rebuild skipped", e);
+}
+
   // ✅ PWA Service Worker
   try{
     if("serviceWorker" in navigator){
@@ -1472,6 +1483,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
