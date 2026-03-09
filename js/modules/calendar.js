@@ -477,7 +477,7 @@ function openDaySheet_(root, dayIso){
   document.getElementById("cal_close").addEventListener("click", closeSheet_);
   document.getElementById("cal_add").addEventListener("click", ()=> openEditSheet_(root, dayIso, null));
 
-  sheetEl.addEventListener("click", (e)=>{
+    sheetEl.addEventListener("click", async (e)=>{
     const t = e.target;
     if(!(t && t.getAttribute)) return;
     const act = t.getAttribute("data-act");
