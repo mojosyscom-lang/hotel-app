@@ -1,4 +1,5 @@
 const KEY = "hotelcrm_v1";
+const SNAP_KEY = "hotelcrm_snapshot_v1";
 const DB_NAME = "hotelcrm_db";
 const STORE = "main";
 const DB_VERSION = 1;
@@ -13,7 +14,15 @@ function uid_(){
 }
 
 function defaultDB_(){
-  return { leads:[], followups:[], contracts:[], bookings:[], terms:{ text:"" }, company:{} };
+  return {
+  leads:[],
+  followups:[],
+  contracts:[],
+  bookings:[],
+  stats:{},
+  terms:{ text:"" },
+  company:{}
+};
 }
 
 function openDB_(){
@@ -80,6 +89,13 @@ function loadLocal_(){
 async function initCache_(){
 
   if(memCache) return memCache;
+  // Try ultra-fast snapshot load first
+try{
+  const snap = localStorage.getItem(SNAP_KEY);
+  if(snap){
+    memCache = normalizeDB_(JSON.parse(snap));
+  }
+}catch(e){}
 
   let dbData = null;
 
@@ -116,13 +132,26 @@ async function initCache_(){
 }
 
 function normalizeDB_(db){
+
+  const safe = (db && typeof db === "object") ? db : {};
+
   return {
-    leads: Array.isArray(db.leads) ? db.leads : [],
-    followups: Array.isArray(db.followups) ? db.followups : [],
-    contracts: Array.isArray(db.contracts) ? db.contracts : [],
-    bookings: Array.isArray(db.bookings) ? db.bookings : [],
-    terms: (db.terms && typeof db.terms === "object") ? db.terms : { text:"" },
-    company: (db.company && typeof db.company === "object") ? db.company : {}
+    leads: Array.isArray(safe.leads) ? safe.leads : [],
+    followups: Array.isArray(safe.followups) ? safe.followups : [],
+    contracts: Array.isArray(safe.contracts) ? safe.contracts : [],
+    bookings: Array.isArray(safe.bookings) ? safe.bookings : [],
+
+    terms: (safe.terms && typeof safe.terms === "object")
+      ? { text: String(safe.terms.text || "") }
+      : { text: "" },
+
+    company: (safe.company && typeof safe.company === "object")
+  ? safe.company
+  : {},
+
+stats: (safe.stats && typeof safe.stats === "object")
+  ? safe.stats
+  : {}
   };
 }
 
@@ -142,6 +171,9 @@ export const store = {
 
   async set(db){
     memCache = normalizeDB_(db);
+    try{
+  localStorage.setItem(SNAP_KEY, JSON.stringify(memCache));
+}catch(e){}
 
     try{
       await writeIDB_(memCache);
@@ -155,3 +187,4 @@ export const store = {
   nowISO: nowISO_
 
 };
+
