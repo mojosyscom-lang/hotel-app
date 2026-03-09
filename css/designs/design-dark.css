@@ -15,15 +15,15 @@ html:root{
   --btn-text: rgba(255,255,255,0.92);
 
   /* unified dark header/safe-zone/status-bar */
-  --header-overlay-1: rgba(12,18,30,.94);
-  --header-overlay-2: rgba(12,18,30,.94);
+  --header-overlay-1: #0b3a2a;
+  --header-overlay-2: #0b3a2a;
   --header-bg: linear-gradient(
     90deg,
     var(--header-overlay-1) 0%,
     var(--header-overlay-2) 100%
   );
   --header-fg: #ffffff;
-  --header-statusbar: rgba(12,18,30,.94);
+  --header-statusbar: #0b3a2a;
   --meta-theme: var(--header-statusbar);
 }
 
