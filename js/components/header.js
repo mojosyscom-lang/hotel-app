@@ -22,6 +22,24 @@ export function renderHeader(){
   `;
 }
 
+async function applyFavicons_(){
+  const db = store.get();
+  const c = db.company || {};
+
+  const localLogo = await getObjectUrl("company_logo");
+  const urlLogo = String(c.logo_url || "").trim();
+  const src = localLogo || urlLogo || "./favicon.ico";
+
+  const fav = document.getElementById("app_favicon");
+  const shortFav = document.getElementById("app_shortcut_icon");
+  const appleFav = document.getElementById("app_apple_touch_icon");
+
+  if(fav) fav.setAttribute("href", src);
+  if(shortFav) shortFav.setAttribute("href", src);
+  if(appleFav) appleFav.setAttribute("href", src);
+}
+
+
 export async function applyBranding(){
   const db = store.get();
   const c = db.company || {};
@@ -49,7 +67,7 @@ export async function applyBranding(){
     }
   }
 
-  // Header background (prefer IndexedDB, fallback to URL)
+   // Header background (prefer IndexedDB, fallback to URL)
   const topbar = document.querySelector(".topbar");
   if(topbar){
     const localBg = await getObjectUrl("company_bg");
@@ -68,21 +86,17 @@ export async function applyBranding(){
 
       topbar.style.backgroundSize = "cover";
       topbar.style.backgroundPosition = "center";
-        }else{
+    }else{
       // No background image → still show a clean gradient header
-      const overlay1 = getComputedStyle(document.documentElement)
-        .getPropertyValue("--header-overlay-1").trim() || "rgba(11,58,42,.92)";
-
-      const overlay2 = getComputedStyle(document.documentElement)
-        .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.92)";
-
-        // Keep CSS gradient background (do NOT force blank)
       topbar.style.backgroundImage = "";
       topbar.style.backgroundSize = "";
       topbar.style.backgroundPosition = "";
     }
   }
+
+  await applyFavicons_();
 }
+
 
 
 
