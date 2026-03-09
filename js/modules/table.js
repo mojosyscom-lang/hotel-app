@@ -490,32 +490,32 @@ export function renderBookingTablePage(root, opts){
     const amount = totalAmount_(b);
     const remark = String(b && b.note || "").trim();
 
-    return `
-      <tr>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(bookingDate)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(bookerName)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mobile)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(guestName)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(companyName)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkIn)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(checkOut)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(noOfRooms)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? noOfDays : noOfRoomNights)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(tariff)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(amount)}</td>
-        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(remark)}</td>
+       return `
+      <tr style="background:#ffffff; color:#111827;">
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(bookingDate)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(bookerName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(mobile)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(guestName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(companyName)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(checkIn)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(checkOut)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(noOfRooms)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(mode === "event" ? noOfDays : noOfRoomNights)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(tariff)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(amount)}</td>
+        <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">${esc_(remark)}</td>
       </tr>
     `;
   }).join("");
 
   const totalsRow = filtered.length ? `
-    <tr style="background:#fff59d; font-weight:700;">
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;" colspan="7">TOTAL</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalRooms)}</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(mode === "event" ? totalDays : totalRoomNights)}</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">-</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;">${esc_(totalAmount)}</td>
-      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center;"></td>
+    <tr style="background:#fff59d; font-weight:700; color:#111827;">
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;" colspan="7">TOTAL</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;">${esc_(totalRooms)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;">${esc_(mode === "event" ? totalDays : totalRoomNights)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;">-</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;">${esc_(totalAmount)}</td>
+      <td style="padding:8px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#fff59d;"></td>
     </tr>
   ` : "";
   
@@ -543,29 +543,29 @@ export function renderBookingTablePage(root, opts){
 
       <div class="small" style="margin-top:10px;">Showing ${filtered.length} row(s)</div>
 
-            <div style="overflow:auto; margin-top:12px;">
-        <table style="width:100%; min-width:1400px; border-collapse:collapse; font-size:13px; background:#fff;">
+                 <div style="overflow:auto; margin-top:12px;">
+        <table style="width:100%; min-width:1400px; border-collapse:collapse; font-size:13px; background:#ffffff; color:#111827;">
           <thead>
             <tr>
-              <th colspan="12" style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center; font-weight:800;">${esc_(title)}</th>
+              <th colspan="12" style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center; font-weight:800;">${esc_(title)}</th>
             </tr>
             <tr>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">BOOKING DATE</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">BOOKER NAME</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">MOBILE NUMBER</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">GUEST NAME</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">COMPANY NAME</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">CHECK IN</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">CHECK OUT</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">NO OF ROOMS</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">${mode === "event" ? "NO.DAY" : "NO.NIGHT"}</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">TARIFF</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">AMOUNT</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; text-align:center;">REMARK</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">BOOKING DATE</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">BOOKER NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">MOBILE NUMBER</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">GUEST NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">COMPANY NAME</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">CHECK IN</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">CHECK OUT</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">NO OF ROOMS</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">${mode === "event" ? "NO.DAY" : "NO.NIGHT"}</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">TARIFF</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">AMOUNT</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">REMARK</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || `<tr><td colspan="12" style="padding:12px; border:1px solid #b7b7b7; text-align:center;">No data found.</td></tr>`}
+                      ${rows || `<tr><td colspan="12" style="padding:12px; border:1px solid #b7b7b7; text-align:center; color:#111827; background:#ffffff;">No data found.</td></tr>`}
             ${totalsRow}
           </tbody>
         </table>
