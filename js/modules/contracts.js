@@ -45,26 +45,21 @@ function dataUrlToBlob_(dataUrl){
 let pdfJsReadyPromise_ = null;
 
 function ensurePdfJs_(){
-  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if(pdfJsReadyPromise_) return pdfJsReadyPromise_;
 
-  pdfJsReadyPromise_ = new Promise((resolve, reject)=>{
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js";
-    script.onload = ()=>{
-      if(!window.pdfjsLib){
-        reject(new Error("PDF.js failed to load"));
-        return;
-      }
-
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
-
-      resolve(window.pdfjsLib);
-    };
-    script.onerror = ()=> reject(new Error("Could not load PDF.js"));
-    document.head.appendChild(script);
-  });
+  pdfJsReadyPromise_ = (async ()=>{
+    try{
+      const pdfjsLib = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/legacy/build/pdf.min.mjs");
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/legacy/build/pdf.worker.min.mjs";
+      return pdfjsLib;
+    }catch(err1){
+      const pdfjsLib = await import("https://unpkg.com/pdfjs-dist@4.4.168/legacy/build/pdf.min.mjs");
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://unpkg.com/pdfjs-dist@4.4.168/legacy/build/pdf.worker.min.mjs";
+      return pdfjsLib;
+    }
+  })();
 
   return pdfJsReadyPromise_;
 }
@@ -241,7 +236,7 @@ async function openPdf_(contract){
     }
   }catch(e){
     console.error("PDF open failed", e);
-    alert("Could not open PDF.");
+    alert("Could not open PDF. Check console once.");
   }
 }
 
@@ -314,4 +309,5 @@ export function renderContracts(root){
 
   bindActions_(root);
 }
+
 
