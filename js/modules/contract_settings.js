@@ -59,6 +59,40 @@ function buildContractPdfName_(lead, status, startDateIso){
   return `Contract_${companyPart}_${statusPart}_${datePart}.pdf`;
 }
 
+
+
+
+let actionBusy_ = false;
+
+function setButtonsBusy_(root, busy){
+  root.querySelectorAll("button").forEach(btn=>{
+    btn.disabled = !!busy;
+  });
+}
+
+async function runOnce_(root, fn){
+  if(actionBusy_) return;
+  actionBusy_ = true;
+  setButtonsBusy_(root, true);
+
+  try{
+    await fn();
+  }finally{
+    actionBusy_ = false;
+    setButtonsBusy_(root, false);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 function contractCard_(c, lead){
   return `
     <div class="listItem" data-id="${esc_(c.id)}">
@@ -103,11 +137,15 @@ function renderList_(root, onBack){
   `;
 
   root.querySelector("#btn_back_menu").addEventListener("click", ()=>{
-    if(typeof onBack === "function") onBack();
+    runOnce_(root, async ()=>{
+      if(typeof onBack === "function") onBack();
+    });
   });
 
-  root.querySelector("#cs_new").addEventListener("click", ()=>{
-    renderForm_(root, onBack, null);
+    root.querySelector("#cs_new").addEventListener("click", ()=>{
+    runOnce_(root, async ()=>{
+      renderForm_(root, onBack, null);
+    });
   });
 
   const listEl = root.querySelector("#c_list");
@@ -143,8 +181,10 @@ function renderForm_(root, onBack, id){
       </div>
     `;
 
-    root.querySelector("#btn_back_menu").addEventListener("click", ()=>{
-      if(typeof onBack === "function") onBack();
+     root.querySelector("#btn_back_menu").addEventListener("click", ()=>{
+      runOnce_(root, async ()=>{
+        if(typeof onBack === "function") onBack();
+      });
     });
 
     return;
@@ -224,84 +264,91 @@ function renderForm_(root, onBack, id){
     </div>
   `;
 
-  root.querySelector("#c_cancel").addEventListener("click", ()=>{
-    renderList_(root, onBack);
+   root.querySelector("#c_cancel").addEventListener("click", ()=>{
+    runOnce_(root, async ()=>{
+      renderList_(root, onBack);
+    });
   });
 
-  root.querySelector("#c_save").addEventListener("click", async ()=>{
-    const lead_id = root.querySelector("#c_lead").value;
-    const final_rate = root.querySelector("#c_rate").value.trim();
-    const start_date = fromDateInput_(root.querySelector("#c_start").value);
-    const end_date = fromDateInput_(root.querySelector("#c_end").value);
-    const notes = root.querySelector("#c_notes").value.trim();
-    const status = root.querySelector("#c_status").value;
+  root.querySelector("#c_save").addEventListener("click", ()=>{
+    runOnce_(root, async ()=>{
+      const lead_id = root.querySelector("#c_lead").value;
+      const final_rate = root.querySelector("#c_rate").value.trim();
+      const start_date = fromDateInput_(root.querySelector("#c_start").value);
+      const end_date = fromDateInput_(root.querySelector("#c_end").value);
+      const notes = root.querySelector("#c_notes").value.trim();
+      const status = root.querySelector("#c_status").value;
 
-    if(!final_rate){
-      alert("Please enter final rate.");
-      return;
-    }
-
-    let attachment_pdf_name = String(c.attachment_pdf_name || "");
-    let attachment_pdf_type = String(c.attachment_pdf_type || "");
-    let attachment_pdf_data = String(c.attachment_pdf_data || "");
-
-    const removePdfEl = root.querySelector("#c_remove_pdf");
-    if(removePdfEl && removePdfEl.checked){
-      attachment_pdf_name = "";
-      attachment_pdf_type = "";
-      attachment_pdf_data = "";
-    }
-
-    const pdfFile = root.querySelector("#c_pdf").files && root.querySelector("#c_pdf").files[0]
-      ? root.querySelector("#c_pdf").files[0]
-      : null;
-
-      if(pdfFile){
-      const fileType = String(pdfFile.type || "").toLowerCase();
-      const fileName = String(pdfFile.name || "");
-      const isPdf = (fileType === "application/pdf") || /\.pdf$/i.test(fileName);
-
-      if(!isPdf){
-        alert("Please upload a PDF file only.");
+      if(!final_rate){
+        alert("Please enter final rate.");
         return;
       }
 
-      const pdfData = await fileToDataUrl_(pdfFile);
-      attachment_pdf_name = pdfFile.name || "contract.pdf";
-      attachment_pdf_type = fileType || "application/pdf";
-      attachment_pdf_data = pdfData;
-    }
+      let attachment_pdf_name = String(c.attachment_pdf_name || "");
+      let attachment_pdf_type = String(c.attachment_pdf_type || "");
+      let attachment_pdf_data = String(c.attachment_pdf_data || "");
+
+      const removePdfEl = root.querySelector("#c_remove_pdf");
+      if(removePdfEl && removePdfEl.checked){
+        attachment_pdf_name = "";
+        attachment_pdf_type = "";
+        attachment_pdf_data = "";
+        alert("Saved PDF removed.");
+      }
+
+      const pdfFile = root.querySelector("#c_pdf").files && root.querySelector("#c_pdf").files[0]
+        ? root.querySelector("#c_pdf").files[0]
+        : null;
+
+      if(pdfFile){
+        const fileType = String(pdfFile.type || "").toLowerCase();
+        const fileName = String(pdfFile.name || "");
+        const isPdf = (fileType === "application/pdf") || /\.pdf$/i.test(fileName);
+
+        if(!isPdf){
+          alert("Please upload a PDF file only.");
+          return;
+        }
+
+        const pdfData = await fileToDataUrl_(pdfFile);
+        attachment_pdf_name = pdfFile.name || "contract.pdf";
+        attachment_pdf_type = fileType || "application/pdf";
+        attachment_pdf_data = pdfData;
+        alert("PDF uploaded.");
+      }
 
       const db2 = store.get();
-    const leadObj = leads.find(l => l.id === lead_id) || null;
+      const leadObj = leads.find(l => l.id === lead_id) || null;
 
-    if(pdfFile){
-      attachment_pdf_name = buildContractPdfName_(leadObj, status, start_date);
-    }
+      if(pdfFile){
+        attachment_pdf_name = buildContractPdfName_(leadObj, status, start_date);
+      }
 
-    const updated = {
-      ...c,
-      lead_id,
-      final_rate,
-      start_date,
-      end_date,
-      attachment_pdf_name,
-      attachment_pdf_type,
-      attachment_pdf_data,
-      notes,
-      status,
-      updated_at: store.nowISO()
-    };
+      const updated = {
+        ...c,
+        lead_id,
+        final_rate,
+        start_date,
+        end_date,
+        attachment_pdf_name,
+        attachment_pdf_type,
+        attachment_pdf_data,
+        notes,
+        status,
+        updated_at: store.nowISO()
+      };
 
-    if(existing){
-      db2.contracts = (db2.contracts||[]).map(x=> x.id===id ? updated : x);
-    }else{
-      db2.contracts = db2.contracts || [];
-      db2.contracts.push(updated);
-    }
+      if(existing){
+        db2.contracts = (db2.contracts||[]).map(x=> x.id===id ? updated : x);
+      }else{
+        db2.contracts = db2.contracts || [];
+        db2.contracts.push(updated);
+      }
 
-    await store.set(db2);
-    renderList_(root, onBack);
+      await store.set(db2);
+      alert(existing ? "Contract saved." : "Contract created.");
+      renderList_(root, onBack);
+    });
   });
 }
 
@@ -309,19 +356,26 @@ function bindActions_(root, onBack){
   root.querySelectorAll(".listItem").forEach(row=>{
     const id = row.getAttribute("data-id");
     row.querySelectorAll("button").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const act = btn.getAttribute("data-act");
-        if(act === "edit") return renderForm_(root, onBack, id);
+      btn.addEventListener("click", ()=>{
+        runOnce_(root, async ()=>{
+          const act = btn.getAttribute("data-act");
 
-        if(act === "delete"){
-          const ok = confirm("Delete this contract?");
-          if(!ok) return;
+          if(act === "edit"){
+            renderForm_(root, onBack, id);
+            return;
+          }
 
-          const db = store.get();
-          db.contracts = (db.contracts||[]).filter(x=>x.id!==id);
-          await store.set(db);
-          renderList_(root, onBack);
-        }
+          if(act === "delete"){
+            const ok = confirm("Delete this contract?");
+            if(!ok) return;
+
+            const db = store.get();
+            db.contracts = (db.contracts||[]).filter(x=>x.id!==id);
+            await store.set(db);
+            alert("Contract deleted.");
+            renderList_(root, onBack);
+          }
+        });
       });
     });
   });
