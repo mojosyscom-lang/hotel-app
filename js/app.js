@@ -267,35 +267,63 @@ function saveSettings_(s){
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s || {}));
 }
 
-function applyTheme_(){
+function updateMetaThemeColor_(){
+  const meta = document.getElementById("meta_theme_color");
+  if(!meta) return;
+
+  const css = getComputedStyle(document.documentElement);
+  const v =
+    css.getPropertyValue("--header-statusbar").trim() ||
+    css.getPropertyValue("--meta-theme").trim() ||
+    "#0b3a2a";
+
+  meta.setAttribute("content", v);
+}
+
+function waitCssLoaded_(link){
+  return new Promise((resolve)=>{
+    if(!link) return resolve();
+
+    let done = false;
+    const finish = ()=>{
+      if(done) return;
+      done = true;
+      resolve();
+    };
+
+    link.addEventListener("load", finish, { once:true });
+    link.addEventListener("error", finish, { once:true });
+
+    // fallback in case browser serves from cache and load timing is odd
+    setTimeout(finish, 250);
+  });
+}
+
+async function applyTheme_(){
   const s = loadSettings_();
 
   const theme = String(s.theme || "green").trim().toLowerCase();
   const design = String(s.design || "executive").trim().toLowerCase(); // executive | dark
 
-  // Theme (accent)
   const themeLink = document.getElementById("theme_css");
+  const designLink = document.getElementById("design_css");
+
   if(themeLink){
     const file = theme === "blue" ? "theme-blue.css" : "theme-green.css";
     themeLink.setAttribute("href", `./css/themes/${file}`);
   }
 
-  // Design (layout)
-  const designLink = document.getElementById("design_css");
   if(designLink){
     const dfile = (design === "dark") ? "design-dark.css" : "design-executive.css";
     designLink.setAttribute("href", `./css/designs/${dfile}`);
   }
 
-  // Update iPhone safe-area / browser top bar color from CSS variable
-  const meta = document.getElementById("meta_theme_color");
-  if(meta){
-    // wait a tick so CSS applies, then read variable
-    setTimeout(()=>{
-  const v = getComputedStyle(document.documentElement).getPropertyValue("--meta-theme").trim();
-  meta.setAttribute("content", v || "#0b3a2a");
-}, 80);
-  }
+  await Promise.all([
+    waitCssLoaded_(themeLink),
+    waitCssLoaded_(designLink)
+  ]);
+
+  updateMetaThemeColor_();
 }
 
 // backup issues solved
@@ -655,7 +683,7 @@ try{
   if(!merged.backup_endpoint) merged.backup_endpoint = cur.backup_endpoint || "";
 
   saveSettings_(merged);
-  applyTheme_();
+  await applyTheme_();
 }catch(e){
   console.warn("Settings restore skipped/failed", e);
 }
@@ -840,10 +868,13 @@ function renderAppearanceSettings_(){
     const s2 = loadSettings_();
     s2.design = document.getElementById("set_design").value;
     s2.theme = document.getElementById("set_theme").value;
-    saveSettings_(s2);
-    applyTheme_();
-    applyBranding(); // refresh header overlay immediately
-    alert("Saved.");
+       saveSettings_(s2);
+
+    (async ()=>{
+      await applyTheme_();
+      await applyBranding(); // refresh header overlay immediately
+      alert("Saved.");
+    })();
   });
 }
 
@@ -1381,7 +1412,7 @@ try{
 
 
 	
-   applyTheme_();
+      await applyTheme_();
   await loadLatestVersion_();
   await checkForUpdate_();
 
@@ -1486,6 +1517,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
