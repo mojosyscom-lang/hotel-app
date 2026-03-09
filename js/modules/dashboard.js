@@ -109,12 +109,16 @@ export function renderDashboard(root){
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthPrefix = monthNames[now.getMonth()];
 
-  const roomCount = bookingsArr.reduce((sum,b)=>{
-    const e = String(b && b.end_date || "");
+    const roomCount = bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
     if(String(b && b.type || "room") === "event") return sum;
-    if(!e || e < todayIso) return sum;
-    if(monthKeyFromIso_(s) !== currentMonthKey) return sum;
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
     return sum + roomsCount_(b);
   }, 0);
   const eventCount = bookingsArr.filter(b=>{
@@ -148,10 +152,25 @@ export function renderDashboard(root){
   }).length;
 
   // Pre-booked = today + future
-   const preBookedNights = bookingsArr.reduce((sum,b)=>{
+     const preBookedNights = bookingsArr.reduce((sum,b)=>{
+    if(!isRoom(b)) return sum;
+
+    const s = String(b && b.start_date || "");
     const e = String(b && b.end_date || "");
-    if(!isRoom(b) || !e || e < todayIso) return sum;
-    return sum + (roomNights_(b) * roomsCount_(b));
+    if(!s || !e) return sum;
+
+    const overlapStart = s > monthStartIso ? s : monthStartIso;
+    const overlapEnd = e < monthEndIso ? e : monthEndIso;
+    if(overlapStart > overlapEnd) return sum;
+
+    const start = new Date(overlapStart + "T00:00:00");
+    const end = new Date(overlapEnd + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end)) return sum;
+
+    const overlapNights = Math.floor((end - start) / 86400000);
+    const safeNights = overlapNights > 0 ? overlapNights : 1;
+
+    return sum + (safeNights * roomsCount_(b));
   }, 0);
 
   const preBookedEvents = bookingsArr.filter(b=>{
