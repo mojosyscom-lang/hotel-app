@@ -499,6 +499,9 @@ function normalizeDb_(db){
     followups: Array.isArray(fixed.followups) ? fixed.followups : [],
     contracts: Array.isArray(fixed.contracts) ? fixed.contracts : [],
     bookings: Array.isArray(fixed.bookings) ? fixed.bookings : [],
+    stats: (fixed.stats && typeof fixed.stats === "object")
+      ? fixed.stats
+      : {},
     terms: (fixed.terms && typeof fixed.terms === "object")
       ? fixed.terms
       : { text: String(fixed.terms || "") },
@@ -1483,6 +1486,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
