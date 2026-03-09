@@ -487,18 +487,18 @@ hr.sep{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  padding: 12px;
+  gap:8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: rgba(255,255,255,0.04);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .menuLeft{
   display:flex;
   flex-direction:column;
-  gap:3px;
+  gap:2px;
 }
 .menuTitle{
   font-weight:800;
@@ -822,13 +822,14 @@ hr.sep{
   border-radius: 18px 18px 0 0;
   box-shadow: var(--shadow);
 
-  height: calc(100vh - env(safe-area-inset-top));
+  max-height: min(78vh, 720px);
+  min-height: 340px;
   display: flex;
   flex-direction: column;
 
-  padding: 6px 10px calc(env(safe-area-inset-bottom) + 12px) 10px;
+  padding: 4px 8px calc(env(safe-area-inset-bottom) + 8px) 8px;
   transform: translateY(14px);
-   transition: transform .2s ease;
+  transition: transform .2s ease;
 }
 
 /* optional: slight "open" feel */
@@ -837,22 +838,23 @@ hr.sep{
 }
 
 #settings_sheet .sheetHandle{
-  margin: 6px auto 4px auto;
+  margin: 4px auto 2px auto;
   height: 4px;
+  width: 46px;
 }
 
 #settings_sheet .sheetHeader{
-  padding: 6px 10px;
-   flex: 0 0 auto;
+  padding: 4px 8px;
+  flex: 0 0 auto;
 }
 
 #settings_sheet .sheetTitle{
-  font-size: 15px;
-  line-height: 1.1;
+  font-size: 14px;
+  line-height: 1.05;
 }
 
 #settings_sheet .sheetBody{
-  padding: 8px 10px 10px 10px;
+  padding: 6px 8px 8px 8px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -894,6 +896,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
