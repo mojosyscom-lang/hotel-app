@@ -4,7 +4,7 @@
 
 --header-statusbar: #0a2a5a;
 --meta-theme: var(--header-statusbar);
---header-overlay-1: rgba(10,42,90,.92);
+--header-overlay-1: rgba(20,110,200,.92);
 --header-overlay-2: rgba(20,110,200,.92);
 --header-bg: linear-gradient(
   90deg,
@@ -31,5 +31,6 @@
   --pad:14px;
 
 }
+
 
 
