@@ -633,7 +633,11 @@ const ok = confirm("This will overwrite your current local data with the backup.
 if(!ok) return;
 
 // ✅ Save core data (forced + normalized)
-const saved = forceSaveDb_(dataRaw);
+const { rebuildStatsIndex } = await import("./modules/stats_engine.js");
+
+const dbFixed = rebuildStatsIndex(dataRaw);
+
+const saved = forceSaveDb_(dbFixed);
 
 // ✅ Restore settings (merge, don't lose endpoint/theme)
 try{
@@ -1460,6 +1464,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
