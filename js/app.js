@@ -637,7 +637,7 @@ const { rebuildStatsIndex } = await import("./modules/stats_engine.js");
 
 const dbFixed = rebuildStatsIndex(dataRaw);
 
-const saved = forceSaveDb_(dbFixed);
+const saved = await forceSaveDb_(dbFixed);
 
 // ✅ Restore settings (merge, don't lose endpoint/theme)
 try{
@@ -1464,6 +1464,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
