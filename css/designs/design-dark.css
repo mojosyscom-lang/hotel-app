@@ -76,7 +76,7 @@ body{
   color: var(--btn-text);
   border-radius: 14px;
 }
-.iconBtn,
+/* .iconBtn,
 .calNavBtn,
 .sheetClose,
 .manageBtn{
@@ -84,6 +84,7 @@ body{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
 }
+*/
 
 .btn.primary{
   border-color: transparent;
