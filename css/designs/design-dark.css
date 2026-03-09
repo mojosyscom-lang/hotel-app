@@ -151,7 +151,13 @@ td{
   color: #fff;
   box-shadow: 0 18px 44px rgba(0,0,0,0.55);
 }
-
+/* Generic dark surface fallback */
+.sheet *,
+.card *,
+.listItem *,
+.menuItem *{
+  color: inherit;
+}
 /* Dark theme: popouts / sheets / floating panels should be more solid */
 .sheet,
 #settings_sheet .sheet,
