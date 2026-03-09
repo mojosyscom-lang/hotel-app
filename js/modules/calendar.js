@@ -201,6 +201,71 @@ function inRange_(dayIso, startIso, endIso){
   return (dayIso >= startIso && dayIso <= endIso);
 }
 
+function bookingsOverlap_(startA, endA, startB, endB){
+  if(!startA || !endA || !startB || !endB) return false;
+  // hotel logic:
+  // checkout on same day and next checkin on same day should be allowed
+  return (startA < endB && endA > startB);
+}
+
+function getCompanyRoomNumbers_(db){
+  const raw = String(db?.company?.room_numbers || "");
+  const arr = raw
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  const seen = new Set();
+  return arr.filter(x=> (seen.has(x) ? false : (seen.add(x), true)));
+}
+
+function getKnownRooms_(db){
+  const set = new Set();
+
+  getCompanyRoomNumbers_(db).forEach(r=> set.add(r));
+
+  (db.bookings || []).forEach(bb=>{
+    String(bb.room_no || "")
+      .split(",")
+      .map(x=>x.trim())
+      .filter(Boolean)
+      .forEach(r=> set.add(r));
+  });
+
+  return Array.from(set).sort((a,b)=>{
+    const na = Number(a), nb = Number(b);
+    if(isFinite(na) && isFinite(nb)) return na - nb;
+    return String(a).localeCompare(String(b));
+  });
+}
+
+function countBookedRoomsInRange_(db, start_date, end_date, ignoreId){
+  const list = Array.isArray(db.bookings) ? db.bookings : [];
+  let total = 0;
+
+  for(const b of list){
+    if(String(b.type || "room") !== "room") continue;
+    if(ignoreId && String(b.id) === String(ignoreId)) continue;
+
+    const s = String(b.start_date || "");
+    const e = String(b.end_date || "");
+    if(!s || !e) continue;
+
+    if(!bookingsOverlap_(start_date, end_date, s, e)) continue;
+
+    const savedRoomsCount = num0_(b.rooms_count || 0);
+    const fallbackRoomCount = String(b.room_no || "")
+      .split(",")
+      .map(x=>x.trim())
+      .filter(Boolean)
+      .length;
+
+    total += (savedRoomsCount || fallbackRoomCount || 0);
+  }
+
+  return total;
+}
+
 /* --------------------------------------------------
    Check if a room is already booked for date range
 -------------------------------------------------- */
@@ -223,8 +288,8 @@ function roomConflict_(db, room, start_date, end_date, ignoreId){
 
     if(!s || !e) continue;
 
-    // overlap check
-    if(!(end_date < s || start_date > e)){
+       // hotel overlap check (same-day checkout/check-in allowed)
+    if(bookingsOverlap_(start_date, end_date, s, e)){
       return b;
     }
   }
@@ -588,7 +653,7 @@ function openEditSheet_(root, dayIso, booking){
   const endEl = document.getElementById("bk_end");
 
 const typeEl = document.getElementById("bk_type");
-const roomWrap = document.getElementById("bk_room_wrap");
+/* const roomWrap = document.getElementById("bk_room_wrap"); */
 const roomEl = document.getElementById("bk_room_no"); // hidden comma-string
 const roomOneEl = document.getElementById("bk_room_one"); // visible (tel keypad)
 const roomAddEl = document.getElementById("bk_room_add");
@@ -680,16 +745,16 @@ function syncAmountUi_(){
   if(!roomStatusEl) return;
 
   const t = String(typeEl?.value || "room");
-if(t !== "room"){
-  roomStatusEl.innerHTML = "";
-  return;
-}
+  if(t !== "room"){
+    roomStatusEl.innerHTML = "";
+    return;
+  }
 
   const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
-  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : ""; // YYYY-MM-DD
-
+  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
   const end_date = String(endEl?.value || "").trim();
   const rawRooms = String(roomEl?.value || "");
+  const requestedRooms = num0_(roomsCountEl?.value || 0) || rawRooms.split(",").map(x=>x.trim()).filter(Boolean).length;
 
   if(!start_date || !end_date){
     roomStatusEl.innerHTML = "Select start/end date to check availability.";
@@ -701,29 +766,42 @@ if(t !== "room"){
     .map(x=>x.trim())
     .filter(Boolean);
 
-   if(!rooms.length){
-    roomStatusEl.innerHTML = `<span style="color:#888;">Room numbers are optional. Add them only if you want availability check.</span>`;
-    return;
-  }
-
   const dbCheck = store.get();
   ensureBookings_(dbCheck);
 
   const ignoreId = (isEdit ? b.id : null);
+  const hotelTotalRooms = num0_(dbCheck?.company?.total_rooms || 0);
+  const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, ignoreId);
+  const availableRooms = Math.max(0, hotelTotalRooms - alreadyBookedRooms);
+  const allRooms = getKnownRooms_(dbCheck);
 
-      // Collect all known rooms from existing bookings (room_no values)
-  const allRoomsSet = new Set();
-  (dbCheck.bookings || []).forEach(bb=>{
-    String(bb.room_no || "")
-      .split(",")
-      .map(x=>x.trim())
-      .filter(Boolean)
-      .forEach(rn=> allRoomsSet.add(rn));
-  });
-  const allRooms = Array.from(allRoomsSet).sort((a,b)=> Number(a)-Number(b));
+  let html = ``;
 
+  if(hotelTotalRooms > 0){
+    const enoughCapacity = requestedRooms > 0 ? requestedRooms <= availableRooms : true;
 
-    
+    html += `
+      <div style="margin-bottom:8px;">
+        <div><b>Total rooms:</b> ${hotelTotalRooms}</div>
+        <div><b>Already booked:</b> ${alreadyBookedRooms}</div>
+        <div><b>Available:</b> <span style="color:${availableRooms > 0 ? "#188038" : "#d93025"};">${availableRooms}</span></div>
+        ${requestedRooms ? `<div><b>Requested now:</b> ${requestedRooms}</div>` : ``}
+        ${
+          requestedRooms
+            ? `<div style="margin-top:4px; color:${enoughCapacity ? "#188038" : "#d93025"};"><b>${enoughCapacity ? "✅ Capacity available" : "❌ Not enough total room capacity"}</b></div>`
+            : ``
+        }
+      </div>
+    `;
+  }else{
+    html += `<div style="margin-bottom:8px; color:#888;">Set Total Rooms in Company Settings for hotel capacity checking.</div>`;
+  }
+
+  if(!rooms.length){
+    html += `<div style="color:#888;">Room numbers are optional. Add them only if you want exact room conflict check.</div>`;
+    roomStatusEl.innerHTML = html;
+    return;
+  }
 
   let hasConflict = false;
 
@@ -736,7 +814,6 @@ if(t !== "room"){
     return `<div>Room <b>${esc_(r)}</b> <span style="color:#188038;">✅ Available</span></div>`;
   });
 
-  // Suggestions: rooms we know, that are NOT booked in selected range and not already typed
   let sugHtml = "";
   if(hasConflict && allRooms.length){
     const typedSet = new Set(rooms);
@@ -747,7 +824,7 @@ if(t !== "room"){
       return !c;
     });
 
-    const top = available.slice(0, 6); // show up to 6 suggestions
+    const top = available.slice(0, 6);
     if(top.length){
       sugHtml = `
         <div style="margin-top:8px;">
@@ -760,7 +837,7 @@ if(t !== "room"){
     }
   }
 
-  roomStatusEl.innerHTML = lines.join("") + sugHtml;
+  roomStatusEl.innerHTML = html + lines.join("") + sugHtml;
 }
 
 if(typeEl){
@@ -879,6 +956,7 @@ if(phoneEl){
   roomsCountEl.addEventListener("input", ()=>{
     roomsCountEl.value = String(roomsCountEl.value || "").replace(/\D/g,"").slice(0,3);
     syncAmountUi_();
+    syncRoomAvailabilityUi_();
   });
 }
 
@@ -964,41 +1042,50 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       alert("Please enter company name.");
       return;
     }
-       if(String(type)==="room" && !roomsCount){
+             if(String(type)==="room" && !roomsCount){
       alert("Please enter number of rooms.");
       return;
     }
 
-      if(type === "room" && room_no){
+    if(type === "room"){
+      const dbCheck = store.get();
+      ensureBookings_(dbCheck);
 
-  const dbCheck = store.get();
-  ensureBookings_(dbCheck);
+      const hotelTotalRooms = num0_(dbCheck?.company?.total_rooms || 0);
+      if(hotelTotalRooms > 0){
+        const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, isEdit ? b.id : null);
+        const availableRooms = Math.max(0, hotelTotalRooms - alreadyBookedRooms);
 
-  const rooms = room_no
-    .split(",")
-    .map(x=>x.trim())
-    .filter(Boolean);
+        if(roomsCount > availableRooms){
+          alert(`Only ${availableRooms} room(s) available for selected dates.`);
+          return;
+        }
+      }
 
-  for(const r of rooms){
+      if(room_no){
+        const rooms = room_no
+          .split(",")
+          .map(x=>x.trim())
+          .filter(Boolean);
 
-    const conflict = roomConflict_(
-      dbCheck,
-      r,
-      start_date,
-      end_date,
-      isEdit ? b.id : null
-    );
+        for(const r of rooms){
+          const conflict = roomConflict_(
+            dbCheck,
+            r,
+            start_date,
+            end_date,
+            isEdit ? b.id : null
+          );
 
-    if(conflict){
-      alert(
-        `Room ${r} is already booked from ${conflict.start_date} to ${conflict.end_date}.`
-      );
-      return;
+          if(conflict){
+            alert(
+              `Room ${r} is already booked from ${conflict.start_date} to ${conflict.end_date}.`
+            );
+            return;
+          }
+        }
+      }
     }
-
-  }
-}
-
       
     if(contact_number.length !== 10){
       alert("Contact number must be exactly 10 digits.");
