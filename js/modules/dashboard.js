@@ -355,13 +355,13 @@ export function renderDashboard(root){
         <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Nights Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
-          <div class="small" style="margin-top:6px;">Tap to view</div>
+          <div class="small" style="margin-top:6px;" hidden/>Tap to view</div>
         </button>
 
         <button class="card" id="dash_pre_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Event Days (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${preBookedEvents}</div>
-          <div class="small" style="margin-top:6px;">Tap to view</div>
+          <div class="small" style="margin-top:6px;" hidden/>Tap to view</div>
         </button>
 
         <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
