@@ -572,8 +572,9 @@ hr.sep{
 .calGrid{
   margin-top: 10px;
   display:grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
+  min-width: 0;
 }
 .calDow{
   font-size: 11px;
@@ -583,10 +584,13 @@ hr.sep{
 }
 .calDay{
   min-height: 64px;
+  min-width: 0;
+  width: 100%;
   border: 1px solid var(--border);
   background: var(--card);
   border-radius: 16px;
   padding: 8px;
+  overflow: hidden;
 }
 .calDay.muted{
   opacity: .45;
@@ -624,6 +628,50 @@ hr.sep{
   background: rgba(255,255,255,.06);
 }
 
+
+@media (max-width: 420px){
+  .calGrid{
+    gap: 5px;
+  }
+
+  .calDay{
+    min-height: 54px;
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .calNum{
+    font-size: 12px;
+  }
+
+  .calDow{
+    font-size: 10px;
+  }
+
+  .calBadges{
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .badgeCount{
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .dot{
+    width: 8px;
+    height: 8px;
+  }
+
+  .calNavBtn{
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  .calTitle{
+    font-size: 15px;
+  }
+}
 
 
 /* ===========================
@@ -786,6 +834,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
