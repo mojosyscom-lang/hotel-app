@@ -62,6 +62,30 @@ body{
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
   background: var(--bg);
   color: var(--text);
+  position: relative;
+}
+
+/* Safe-zone header continuation (iOS + Android) */
+body::before{
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  /* fill safe area only */
+  height: env(safe-area-inset-top);
+
+  z-index: 49;
+  pointer-events: none;
+
+  background: linear-gradient(
+    90deg,
+    var(--header-overlay-1, rgba(11,58,42,.86)) 0%,
+    var(--header-overlay-2, rgba(15,90,64,.86)) 100%
+  );
+
+  background-color: var(--meta-theme, #0b3a2a);
 }
 
 /* ---------------- Header / Topbar ---------------- */
@@ -103,8 +127,8 @@ body{
   overflow: hidden;
 }
 .brandLogo{
-  width: clamp(36px, 10vw, 44px);
-  height: clamp(36px, 10vw, 44px);
+  width: clamp(44px, 10vw, 44px);
+  height: clamp(44px, 10vw, 44px);
   border-radius: 12px;
   object-fit: cover;
   background: var(--chip-bg);
@@ -114,8 +138,8 @@ body{
 }
 
 .logoDot{
-  width: clamp(36px, 10vw, 44px);
-  height: clamp(36px, 10vw, 44px);
+  width: clamp(44px, 10vw, 44px);
+  height: clamp(44px, 10vw, 44px);
   border-radius: 12px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
@@ -161,8 +185,8 @@ body{
 .iconBtn{
   border: 0;
   outline: none;
-  background: var(--chip-bg);
-  color: var(--topbar-text);
+  background: transparent;
+  color: var(--header-fg);
   border-radius: 12px;
   padding: 10px 12px;
   margin-left: auto;
@@ -172,6 +196,10 @@ body{
   min-width: 44px;
   min-height: 44px;
   box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.iconBtn:active{
+  background: rgba(255,255,255,0.10);
 }
 
 /* ---------------- App container ---------------- */
@@ -837,6 +865,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
