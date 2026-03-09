@@ -1336,7 +1336,7 @@ window.addEventListener("popstate", (e)=>{
 
 
 async function init_(){
-	  await store.ready();
+	  await store.init();
 
   // ✅ PWA Service Worker
   try{
@@ -1472,6 +1472,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
