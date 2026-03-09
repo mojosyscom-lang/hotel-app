@@ -752,6 +752,73 @@ function closeSheet_(){
   setTimeout(()=>{ bd.style.display = "none"; }, 120);
 }
 
+
+function initSettingsSheetSwipe_(){
+  const bd = document.getElementById("settings_sheet");
+  if(!bd) return;
+
+  const panel = bd.querySelector(".sheet");
+  if(!panel) return;
+  if(panel.dataset.swipeReady === "1") return;
+  panel.dataset.swipeReady = "1";
+
+  let startY = 0;
+  let deltaY = 0;
+  let dragging = false;
+
+  function resetPanel_(){
+    panel.style.transform = "";
+  }
+
+  panel.addEventListener("touchstart", (e)=>{
+    if(!bd.classList.contains("open")) return;
+    const t = e.target;
+    const headHit =
+      (t && t.closest && t.closest(".sheetHeader")) ||
+      (t && t.closest && t.closest(".sheetHandle"));
+
+    if(!headHit) return;
+
+    startY = e.touches[0].clientY;
+    deltaY = 0;
+    dragging = true;
+    panel.style.transition = "none";
+  }, { passive:true });
+
+  panel.addEventListener("touchmove", (e)=>{
+    if(!dragging) return;
+
+    deltaY = e.touches[0].clientY - startY;
+    if(deltaY < 0) deltaY = 0;
+
+    panel.style.transform = `translateY(${Math.min(deltaY, 260)}px)`;
+  }, { passive:true });
+
+  panel.addEventListener("touchend", ()=>{
+    if(!dragging) return;
+    dragging = false;
+    panel.style.transition = "";
+
+    if(deltaY > 110){
+      resetPanel_();
+      closeSheet_();
+      return;
+    }
+
+    resetPanel_();
+  });
+
+  panel.addEventListener("touchcancel", ()=>{
+    dragging = false;
+    panel.style.transition = "";
+    resetPanel_();
+  });
+}
+
+
+
+
+
 function renderSettingsMenu_(){
   const body = document.getElementById("settings_sheet_body");
   if(!body) return;
@@ -1459,6 +1526,8 @@ try{
   console.log("✅ init_() running, now calling renderHeader()");
   renderHeader();
 
+	  initSettingsSheetSwipe_();
+
   // Then apply branding (logo/background)
   try{
     await applyBranding();
@@ -1533,6 +1602,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
