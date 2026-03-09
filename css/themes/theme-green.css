@@ -3,9 +3,16 @@
   --accent: #0b7a55;
   --accent2: #16a34a;
  
---meta-theme: #0b3a2a;
+--header-statusbar: #0b3a2a;
+--meta-theme: var(--header-statusbar);
 --header-overlay-1: rgba(11,58,42,.92);
 --header-overlay-2: rgba(15,90,64,.92);
+--header-bg: linear-gradient(
+  90deg,
+  var(--header-overlay-1) 0%,
+  var(--header-overlay-2) 100%
+);
+--header-fg: #ffffff;
   
   --bg:#f6f7f8;
   --card:#ffffff;
@@ -23,4 +30,5 @@
   --pad:14px;
 
 }
+
 
