@@ -508,12 +508,12 @@ function normalizeDb_(db){
   };
 }
 
-function forceSaveDb_(db){
+async function forceSaveDb_(db){
   // make sure the EXACT LocalStorage key is updated
   const clean = normalizeDb_(db);
 
   try{
-    store.set(clean);
+    await store.set(clean);
   }catch(e){
     // fallback if store.set ever fails
     localStorage.setItem("hotelcrm_v1", JSON.stringify(clean));
@@ -903,7 +903,15 @@ function renderBackupSettings_(){
     const ok = confirm("Delete all local data? This cannot be undone.");
     if(!ok) return;
     localStorage.removeItem("hotelcrm_v1");
-    localStorage.removeItem("hotelcrm_last_backup_day");
+localStorage.removeItem("hotelcrm_snapshot_v1");
+localStorage.removeItem("hotelcrm_last_backup_day");
+localStorage.removeItem("hotelcrm_last_backup_at");
+
+try{
+  indexedDB.deleteDatabase("hotelcrm_db");
+}catch(e){
+  console.warn("IDB reset failed",e);
+}
     route = "leads";
     render_();
     alert("Reset complete.");
@@ -1464,6 +1472,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
