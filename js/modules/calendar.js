@@ -1,4 +1,5 @@
 import { store } from "../storage.js";
+import { rebuildStatsIndex } from "./stats_engine.js";
 
 const SETTINGS_KEY = "hotelcrm_settings_v1";
 const DEVICE_KEY = "hotelcrm_device_id_v1";
@@ -492,7 +493,8 @@ function openDaySheet_(root, dayIso){
       if(!ok) return;
       const db2 = store.get();
       db2.bookings = (db2.bookings||[]).filter(x=>String(x.id)!==String(id));
-      store.set(db2);
+      rebuildStatsIndex(db2);
+await store.set(db2);
       openDaySheet_(root, dayIso);
       renderMonth_(root);
     }
@@ -1042,7 +1044,8 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       });
     }
 
-        store.set(db);
+        rebuildStatsIndex(db);
+await store.set(db);
 
     // 🔔 schedule booking reminders (based on start_date + start_time)
     try{
@@ -1093,7 +1096,8 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       try{
       const db = store.get();
           db.bookings = (db.bookings||[]).filter(x=>String(x.id)!==String(b.id));
-      store.set(db);
+      rebuildStatsIndex(db);
+await store.set(db);
 
       // 🔔 delete scheduled reminder jobs
       try{
