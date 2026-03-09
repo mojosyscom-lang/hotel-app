@@ -97,6 +97,11 @@ body{
   flex: 1 1 auto;
 }
 
+.brandText{
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
 .brandLogo{
   width: 34px;
   height: 34px;
@@ -120,17 +125,20 @@ body{
   font-weight: 800;
   letter-spacing: .2px;
   line-height: 1.1;
+  font-size: clamp(16px, 4.2vw, 22px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 .brandSub{
-  font-size: 12px;
+  font-size: clamp(11px, 2.8vw, 12px);
   opacity: .92;
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /*
@@ -774,6 +782,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
