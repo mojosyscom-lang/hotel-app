@@ -4,7 +4,8 @@ import { exportImagesBase64 } from "./images_db.js";
 import { renderDashboard } from "./modules/dashboard.js";
 import { renderLeads, onFabLeads, openLeadById } from "./modules/leads.js";
 import { renderFollowups, onFabFollowups, openFollowupById } from "./modules/followups.js";
-import { renderContracts, onFabContracts } from "./modules/contracts.js";
+import { renderContracts } from "./modules/contracts.js";
+import { renderContractSettings } from "./modules/contract_settings.js";
 import { renderTerms, onFabTerms, renderTermsSettings } from "./modules/terms.js";
 import { renderCompany, onFabCompany } from "./modules/company.js";
 import { renderCalendar, onFabCalendar, openCalendarDay } from "./modules/calendar.js";
@@ -470,7 +471,7 @@ function render_(){
   else if(route === "contracts"){
     setSubtitle_("Contracts");
     renderContracts(app);
-    fab.style.display = "";
+    fab.style.display = "none";
   }
   else if(route === "terms"){
     setSubtitle_("Terms & Conditions");
@@ -507,7 +508,7 @@ fab.addEventListener("click", ()=>{
   if(route === "calendar") return onFabCalendar(app, render_);
   if(route === "leads") return onFabLeads(app, render_);
   if(route === "followups") return onFabFollowups(app, render_);
-  if(route === "contracts") return onFabContracts(app, render_);
+  
   if(route === "terms") return onFabTerms(app, render_);
   if(route === "company") return onFabCompany(app, render_);
 });
@@ -823,6 +824,14 @@ ${canInstallPwa ? `
       <div class="menuArrow">›</div>
     </div>
 
+    <div class="menuItem" data-menu="contracts">
+      <div class="menuLeft">
+        <div class="menuTitle">Contract Settings</div>
+        <div class="menuSub">Create, edit, delete and upload pdf's contracts</div>
+      </div>
+      <div class="menuArrow">›</div>
+    </div>
+
     <div class="menuItem" data-menu="about">
       <div class="menuLeft">
         <div class="menuTitle">About</div>
@@ -1089,10 +1098,17 @@ document.addEventListener("click", async (e)=>{
   return;
 }
 
-	   if(key === "terms"){
+	 	   if(key === "terms"){
       const body = document.getElementById("settings_sheet_body");
       if(!body) return;
       await renderTermsSettings(body, renderSettingsMenu_);
+      return;
+    }
+
+    if(key === "contracts"){
+      const body = document.getElementById("settings_sheet_body");
+      if(!body) return;
+      await renderContractSettings(body, renderSettingsMenu_);
       return;
     }
 	  
@@ -1517,6 +1533,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
