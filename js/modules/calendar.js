@@ -338,10 +338,15 @@ function ensureSheet_(){
   sheetEl.className = "sheet";
   sheetEl.id = "cal_sheet";
 
-  document.body.appendChild(sheetBackdrop);
+   document.body.appendChild(sheetBackdrop);
   document.body.appendChild(sheetEl);
 
   sheetBackdrop.addEventListener("click", closeSheet_);
+   sheetEl.addEventListener("click", async (e)=>{
+    const root = document.getElementById("app");
+    if(!root) return;
+    onCalendarSheetClick_(root, e);
+  });
 }
 
 function openSheet_(html){
@@ -354,6 +359,38 @@ function closeSheet_(){
   if(!sheetBackdrop || !sheetEl) return;
   sheetBackdrop.classList.remove("open");
   sheetEl.classList.remove("open");
+}
+
+async function onCalendarSheetClick_(root, e){
+  const t = e.target;
+  if(!(t && t.getAttribute)) return;
+
+  const act = t.getAttribute("data-act");
+  const id = t.getAttribute("data-id");
+
+  if(!act || !id) return;
+
+  if(act === "edit"){
+    const db2 = store.get();
+    const found = (db2.bookings || []).find(x => String(x.id) === String(id));
+    const dayIso = String(sheetEl?.getAttribute("data-day-iso") || "").trim();
+    openEditSheet_(root, dayIso || todayIso_(), found || null);
+    return;
+  }
+
+  if(act === "del"){
+    const ok = confirm("Delete this booking?");
+    if(!ok) return;
+
+    const db2 = store.get();
+    db2.bookings = (db2.bookings || []).filter(x => String(x.id) !== String(id));
+    rebuildStatsIndex(db2);
+    store.set(db2);
+
+    const dayIso = String(sheetEl?.getAttribute("data-day-iso") || "").trim();
+    openDaySheet_(root, dayIso || todayIso_());
+    renderMonth_(root);
+  }
 }
 
 function monthName_(m){
@@ -524,25 +561,30 @@ function openDaySheet_(root, dayIso){
     `;
   }).join("");
 
-  openSheet_(`
-    <div class="sheetTop">
+    if(sheetEl) sheetEl.setAttribute("data-day-iso", String(dayIso || "").trim());
+   openSheet_(`
+    <div class="sheetTop" style="position:sticky; top:0; z-index:5; background:var(--card);">
       <div class="sheetTitle">Bookings — ${esc_(dayIso)}</div>
       <button class="sheetClose" id="cal_close" type="button">Close</button>
     </div>
 
-    <div style="margin-top:12px;">
-      ${rows || `<div class="small">No bookings for this day.</div>`}
-    </div>
+    <div id="cal_day_scroll" style="max-height:calc(80vh - 74px); overflow:auto; -webkit-overflow-scrolling:touch; padding-bottom:16px;">
+      <div style="margin-top:12px;">
+        ${rows || `<div class="small">No bookings for this day.</div>`}
+      </div>
 
-    <div class="btnRow" style="margin-top:12px;">
-      <button class="btn primary" id="cal_add" type="button">Add Booking</button>
+      <div class="btnRow" style="margin-top:12px;">
+        <button class="btn primary" id="cal_add" type="button">Add Booking</button>
+      </div>
     </div>
   `);
 
   document.getElementById("cal_close").addEventListener("click", closeSheet_);
   document.getElementById("cal_add").addEventListener("click", ()=> openEditSheet_(root, dayIso, null));
 
-    sheetEl.addEventListener("click", async (e)=>{
+ /* // this might become culprit
+  
+  sheetEl.addEventListener("click", async (e)=>{
     const t = e.target;
     if(!(t && t.getAttribute)) return;
     const act = t.getAttribute("data-act");
@@ -563,7 +605,7 @@ await store.set(db2);
       openDaySheet_(root, dayIso);
       renderMonth_(root);
     }
-  }, { once:false });
+  }, { once:false }); */
 }
 
 function openEditSheet_(root, dayIso, booking){
@@ -584,7 +626,7 @@ function openEditSheet_(root, dayIso, booking){
   };
 
   openSheet_(`
-    <div class="sheetTop" style="position:sticky; top:0; z-index:5; background:#fff;">
+        <div class="sheetTop" style="position:sticky; top:0; z-index:5; background:var(--card);">
       <div class="sheetTitle">${isEdit ? "Edit" : "Add"} Booking</div>
       <button class="sheetClose" id="cal_close2" type="button">Close</button>
     </div>
