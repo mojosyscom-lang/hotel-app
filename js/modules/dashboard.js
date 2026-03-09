@@ -99,14 +99,14 @@ export function renderDashboard(root){
   const followups = Array.isArray(db.followups) ? db.followups.length : 0;
   const contracts = Array.isArray(db.contracts) ? db.contracts.length : 0;
 
-  const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
-  const stats = db.stats && db.stats[currentMonthKey] ? db.stats[currentMonthKey] : null;
+ const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
     
     // Today + current month
     const pad2 = (n)=> String(n).padStart(2,"0");
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
   const currentMonthKey = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
+  const stats = db.stats && db.stats[currentMonthKey] ? db.stats[currentMonthKey] : null;
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthPrefix = monthNames[now.getMonth()];
   const totalRooms = Number(db.company && db.company.total_rooms) || 0;
