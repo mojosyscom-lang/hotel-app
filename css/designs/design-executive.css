@@ -16,8 +16,17 @@
   --btn-bg: #f0f2f4;
   --btn-text: var(--text);
 
-  /* Top safe area */
-  --meta-theme: #0b3a2a;
+  /* unified executive header/safe-zone/status-bar */
+  --header-overlay-1: rgba(11,58,42,.92);
+  --header-overlay-2: rgba(15,90,64,.92);
+  --header-bg: linear-gradient(
+    90deg,
+    var(--header-overlay-1) 0%,
+    var(--header-overlay-2) 100%
+  );
+  --header-fg: #ffffff;
+  --header-statusbar: #0b3a2a;
+  --meta-theme: var(--header-statusbar);
 }
 
 /* Page background */
