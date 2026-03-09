@@ -14,10 +14,16 @@ html:root{
   --btn-bg: rgba(255,255,255,0.06);
   --btn-text: rgba(255,255,255,0.92);
 
-/* unified dark header/safe-zone/status-bar */
-  --header-bg: #0a0e16; /* The solid, unwavering shade of your bottom nav */
+  /* unified dark header/safe-zone/status-bar */
+  --header-overlay-1: #0a0e16;
+  --header-overlay-2: #0a0e16;
+  --header-bg: linear-gradient(
+    90deg,
+    var(--header-overlay-1) 0%,
+    var(--header-overlay-2) 100%
+  );
   --header-fg: #ffffff;
-  --header-statusbar: var(--header-bg);
+  --header-statusbar: #0a0e16;
   --meta-theme: var(--header-statusbar);
 }
 
