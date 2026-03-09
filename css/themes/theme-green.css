@@ -3,28 +3,27 @@
   --accent: #0b7a55;
   --accent2: #16a34a;
  
---header-statusbar: rgba(15,90,64,.92);
+--header-statusbar: #148a54;
 --meta-theme: var(--header-statusbar);
 
---header-overlay-1: rgba(11,122,85,.74);
---header-overlay-2: rgba(22,163,74,.58);
+--header-overlay-1: #148a54;
+--header-overlay-2: #148a54;
 
 --header-bg: linear-gradient(
-  135deg,
-  rgba(11,122,85,.94) 0%,
-  rgba(15,90,64,.86) 42%,
-  rgba(22,163,74,.72) 100%
+  90deg,
+  var(--header-statusbar) 0%,
+  var(--header-statusbar) 100%
 );
 
 --header-fg: #ffffff;
 
 /* green aurora tokens */
---aurora-1: rgba(255,255,255,.16);
---aurora-2: rgba(74,222,128,.16);
---aurora-3: rgba(134,239,172,.13);
---aurora-shine: rgba(255,255,255,.12);
---aurora-blur-1: 28px;
---aurora-blur-2: 38px;
+--aurora-1: rgba(255,255,255,.24);
+--aurora-2: rgba(110,255,170,.22);
+--aurora-3: rgba(180,255,220,.18);
+--aurora-shine: rgba(255,255,255,.18);
+--aurora-blur-1: 34px;
+--aurora-blur-2: 46px;
   
   --bg:#f6f7f8;
   --card:#ffffff;
@@ -50,18 +49,14 @@
 
 /* Safe-zone continuation for green theme */
 body::before{
-  background:
-    radial-gradient(46% 90% at 16% 100%, var(--aurora-1) 0%, rgba(255,255,255,0) 72%),
-    radial-gradient(42% 90% at 84% 0%, var(--aurora-2) 0%, rgba(74,222,128,0) 72%),
-    linear-gradient(135deg, var(--header-overlay-1) 0%, var(--header-overlay-2) 100%);
+  background: var(--header-statusbar);
   background-color: var(--header-statusbar);
-  filter: saturate(112%);
+  filter: none;
 }
 
 /* Header base for green theme */
 .topbar{
-  background:
-    linear-gradient(135deg, var(--header-overlay-1) 0%, var(--header-overlay-2) 100%);
+  background: var(--header-statusbar);
   background-color: var(--header-statusbar);
   overflow: hidden;
   isolation: isolate;
@@ -73,50 +68,52 @@ body::before{
   z-index: 2;
 }
 
-/* soft moving aurora blobs */
+/* stronger moving aurora blobs */
 .topbar::before{
   content: "";
   position: absolute;
-  left: -14%;
-  right: -14%;
-  top: calc(-1 * env(safe-area-inset-top) - 26px);
-  height: calc(100% + env(safe-area-inset-top) + 70px);
+  left: -18%;
+  right: -18%;
+  top: calc(-1 * env(safe-area-inset-top) - 34px);
+  height: calc(100% + env(safe-area-inset-top) + 96px);
   z-index: 0;
   pointer-events: none;
 
   background:
-    radial-gradient(40% 58% at 12% 34%, var(--aurora-1) 0%, rgba(255,255,255,0) 72%),
-    radial-gradient(34% 54% at 88% 18%, var(--aurora-2) 0%, rgba(74,222,128,0) 74%),
-    radial-gradient(36% 58% at 54% 78%, var(--aurora-3) 0%, rgba(134,239,172,0) 76%);
+    radial-gradient(42% 62% at 8% 26%, var(--aurora-1) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(36% 56% at 84% 14%, var(--aurora-2) 0%, rgba(110,255,170,0) 72%),
+    radial-gradient(42% 64% at 58% 78%, var(--aurora-3) 0%, rgba(180,255,220,0) 74%);
   filter: blur(var(--aurora-blur-1));
-  opacity: .98;
+  opacity: 1;
+  mix-blend-mode: screen;
   transform: translate3d(0,0,0) scale(1);
-  animation: greenHeaderAuroraFloat 12s ease-in-out infinite alternate;
+  animation: greenHeaderAuroraFloat 9s ease-in-out infinite alternate;
 }
 
-/* slow premium shine sweep */
+/* stronger shine sweep */
 .topbar::after{
   content: "";
   position: absolute;
-  left: -22%;
-  top: calc(-1 * env(safe-area-inset-top) - 34px);
-  width: 78%;
-  height: calc(100% + env(safe-area-inset-top) + 88px);
+  left: -26%;
+  top: calc(-1 * env(safe-area-inset-top) - 42px);
+  width: 86%;
+  height: calc(100% + env(safe-area-inset-top) + 104px);
   z-index: 1;
   pointer-events: none;
 
   background: linear-gradient(
     115deg,
     rgba(255,255,255,0) 0%,
-    rgba(255,255,255,.04) 18%,
-    var(--aurora-shine) 44%,
-    rgba(255,255,255,.05) 62%,
+    rgba(255,255,255,.06) 16%,
+    var(--aurora-shine) 42%,
+    rgba(255,255,255,.08) 60%,
     rgba(255,255,255,0) 100%
   );
   filter: blur(var(--aurora-blur-2));
-  opacity: .78;
-  transform: translate3d(-10%, 0, 0) rotate(-8deg);
-  animation: greenHeaderAuroraSweep 15s linear infinite;
+  opacity: .88;
+  mix-blend-mode: screen;
+  transform: translate3d(-16%, 0, 0) rotate(-8deg);
+  animation: greenHeaderAuroraSweep 11s linear infinite;
 }
 
 @keyframes greenHeaderAuroraFloat{
@@ -147,6 +144,7 @@ body::before{
     opacity: .18;
   }
 }
+
 
 
 
