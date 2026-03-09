@@ -14,16 +14,10 @@ html:root{
   --btn-bg: rgba(255,255,255,0.06);
   --btn-text: rgba(255,255,255,0.92);
 
-  /* unified dark header/safe-zone/status-bar */
-  --header-overlay-1: #0b3a2a;
-  --header-overlay-2: #0b3a2a;
-  --header-bg: linear-gradient(
-    90deg,
-    var(--header-overlay-1) 0%,
-    var(--header-overlay-2) 100%
-  );
+/* unified dark header/safe-zone/status-bar */
+  --header-bg: #0a0e16; /* The solid, unwavering shade of your bottom nav */
   --header-fg: #ffffff;
-  --header-statusbar: #0b3a2a;
+  --header-statusbar: var(--header-bg);
   --meta-theme: var(--header-statusbar);
 }
 
@@ -104,10 +98,14 @@ td{
   color: var(--text);
 }
 
-/* Topbar */
-.topbar{
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-  color: var(--topbar-text);
+/* Topbar & Safe Zone */
+.topbar {
+  background: var(--header-bg) !important;
+  color: var(--header-fg) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  
+  /* Expands the header to absorb the device's status bar/notch space */
+  padding-top: env(safe-area-inset-top) !important; 
 }
 
 /* Bottom nav (✅ correct selector) */
