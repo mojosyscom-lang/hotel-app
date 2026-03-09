@@ -105,15 +105,22 @@ try{
     console.warn("IDB read failed",e);
   }
 
-  if(dbData){
+    if(dbData){
     memCache = normalizeDB_(dbData);
+    try{
+      localStorage.setItem(SNAP_KEY, JSON.stringify(memCache));
+    }catch(e){}
     return memCache;
   }
 
   const local = loadLocal_();
 
-  if(local){
+    if(local){
     memCache = normalizeDB_(local);
+
+    try{
+      localStorage.setItem(SNAP_KEY, JSON.stringify(memCache));
+    }catch(e){}
 
     try{
       await writeIDB_(memCache);
@@ -125,8 +132,20 @@ try{
     return memCache;
   }
 
-  memCache = defaultDB_();
-  await writeIDB_(memCache);
+   memCache = defaultDB_();
+
+  try{
+    localStorage.setItem(SNAP_KEY, JSON.stringify(memCache));
+  }catch(e){}
+
+  try{
+    await writeIDB_(memCache);
+  }catch(e){
+    console.warn("Initial IDB write failed", e);
+    try{
+      localStorage.setItem(KEY, JSON.stringify(memCache));
+    }catch(err){}
+  }
 
   return memCache;
 }
@@ -187,4 +206,5 @@ export const store = {
   nowISO: nowISO_
 
 };
+
 
