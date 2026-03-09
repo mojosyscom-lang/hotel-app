@@ -820,13 +820,31 @@ hr.sep{
   border: 1px solid var(--border);
   border-radius: 18px 18px 0 0;
   box-shadow: var(--shadow);
-  padding: 12px 12px calc(env(safe-area-inset-bottom) + 14px) 12px;
+  padding: 6px 10px calc(env(safe-area-inset-bottom) + 12px) 10px;
   transform: translateY(14px);
 }
 
 /* optional: slight "open" feel */
 #settings_sheet.open .sheet{
   transform: translateY(0);
+}
+
+#settings_sheet .sheetHandle{
+  margin: 6px auto 4px auto;
+  height: 4px;
+}
+
+#settings_sheet .sheetHeader{
+  padding: 6px 10px;
+}
+
+#settings_sheet .sheetTitle{
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+#settings_sheet .sheetBody{
+  padding: 8px 10px 10px 10px;
 }
 
 /* Ensure manage popup is below settings */
@@ -862,6 +880,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
