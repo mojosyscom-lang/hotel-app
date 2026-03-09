@@ -67,7 +67,7 @@ export function rebuildStatsIndex(db){
 
     while(cur <= end){
 
-      const monthKey = cur.toISOString().slice(0,7);
+      const monthKey = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,"0")}`;
 
       if(!stats[monthKey]){
         stats[monthKey] = {
