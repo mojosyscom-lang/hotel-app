@@ -68,18 +68,20 @@ body{
 
 .topbar{
   position: fixed;
-   left: 0;
+  left: 0;
   right: 0;
   top: 0;
   z-index: 50;
   padding: calc(env(safe-area-inset-top) + 10px) 14px 10px 14px;
   color: var(--topbar-text);
-  /* background is controlled by header.js (branding) OR design file */
   border-bottom: 1px solid var(--border);
-    /* prevent iOS “jiggle” feeling */
   transform: translateZ(0);
 
-     background: linear-gradient(
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background: linear-gradient(
     90deg,
     var(--header-overlay-1, rgba(11,58,42,.86)) 0%,
     var(--header-overlay-2, rgba(15,90,64,.86)) 100%
@@ -91,6 +93,8 @@ body{
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .brandLogo{
@@ -116,13 +120,20 @@ body{
   font-weight: 800;
   letter-spacing: .2px;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .brandSub{
   font-size: 12px;
   opacity: .92;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/*
 .iconBtn{
   float: right;
   margin-top: -38px;
@@ -131,6 +142,21 @@ body{
   color: var(--topbar-text);
   border-radius: 12px;
   padding: 10px 12px;
+}
+*/
+
+.iconBtn{
+  border: 0;
+  background: var(--chip-bg);
+  color: var(--topbar-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-left: auto;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 2;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 /* ---------------- App container ---------------- */
@@ -748,6 +774,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
