@@ -8,21 +8,11 @@
 --header-overlay-1: #2d8df0;
 --header-overlay-2: #2d8df0;
 
---header-bg: linear-gradient(
-  90deg,
-  var(--header-statusbar) 0%,
-  var(--header-statusbar) 100%
-);
+--header-bg: #2d8df0;
 
 --header-fg: #ffffff;
 
-/* Aurora layers */
---aurora-1: rgba(255,255,255,.24);
---aurora-2: rgba(80,210,255,.20);
---aurora-3: rgba(180,225,255,.16);
---aurora-shine: rgba(255,255,255,.18);
---aurora-blur-1: 32px;
---aurora-blur-2: 44px;
+
 
   
   
@@ -44,102 +34,26 @@
 }
 
 /* =========================
-   HEADER AURORA GLOW
+   HEADER SOLID BLUE ONLY
    ========================= */
 
 .topbar{
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
   color: var(--header-fg);
   background: var(--header-statusbar);
   background-color: var(--header-statusbar);
 }
 
-/* keep header content above effects */
-.topbar > *{
-  position: relative;
-  z-index: 2;
-}
-
-/* soft moving aurora layer */
-.topbar::before{
-  content: "";
-  position: absolute;
-  left: -12%;
-  right: -12%;
-  top: calc(-1 * env(safe-area-inset-top, 0px) - 18px);
-  height: calc(100% + env(safe-area-inset-top, 0px) + 44px);
-  z-index: 0;
-  pointer-events: none;
-
-  background:
-    radial-gradient(42% 58% at 14% 28%, var(--aurora-1) 0%, rgba(255,255,255,0) 70%),
-    radial-gradient(34% 52% at 82% 18%, var(--aurora-2) 0%, rgba(6,182,212,0) 72%),
-    radial-gradient(40% 60% at 54% 72%, var(--aurora-3) 0%, rgba(147,197,253,0) 74%);
-  filter: blur(var(--aurora-blur-1));
-  opacity: .95;
-  transform: translate3d(0,0,0);
-  animation: headerAuroraFloat 11s ease-in-out infinite alternate;
-}
-
-/* extra slow shimmer ribbon */
+.topbar::before,
 .topbar::after{
-  content: "";
-  position: absolute;
-  left: -18%;
-  top: calc(-1 * env(safe-area-inset-top, 0px) - 30px);
-  width: 72%;
-  height: calc(100% + env(safe-area-inset-top, 0px) + 70px);
-  z-index: 1;
-  pointer-events: none;
-
-  background: linear-gradient(
-    115deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,.08) 28%,
-    rgba(255,255,255,.18) 48%,
-    rgba(255,255,255,.07) 64%,
-    rgba(255,255,255,0) 100%
-  );
-  filter: blur(var(--aurora-blur-2));
-  opacity: .70;
-  transform: translate3d(-8%, 0, 0) rotate(-8deg);
-  animation: headerAuroraSweep 14s linear infinite;
+  content: none;
 }
-
-@keyframes headerAuroraFloat{
-  0%{
-    transform: translate3d(-1.5%, -2%, 0) scale(1);
-  }
-  50%{
-    transform: translate3d(2.5%, 1.5%, 0) scale(1.04);
-  }
-  100%{
-    transform: translate3d(5%, -1%, 0) scale(1.08);
-  }
-}
-
-@keyframes headerAuroraSweep{
-  0%{
-    transform: translate3d(-12%, 0, 0) rotate(-8deg);
-    opacity: .38;
-  }
-  50%{
-    opacity: .72;
-  }
-  100%{
-    transform: translate3d(118%, 0, 0) rotate(-8deg);
-    opacity: .24;
-  }
-}
-
 
 body::before{
   background: var(--header-statusbar);
   background-color: var(--header-statusbar);
   filter: none;
 }
+
 
 
 
