@@ -100,6 +100,7 @@ export function renderDashboard(root){
   const contracts = Array.isArray(db.contracts) ? db.contracts.length : 0;
 
   const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
+  const stats = db.stats && db.stats[currentMonthKey] ? db.stats[currentMonthKey] : null;
     
     // Today + current month
     const pad2 = (n)=> String(n).padStart(2,"0");
@@ -113,7 +114,7 @@ export function renderDashboard(root){
   const monthStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-01`;
   const monthEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(daysInMonth)}`;
 
-    const roomCount = bookingsArr.reduce((sum,b)=>{
+    const roomCount = stats ? stats.roomBookings : bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
     const e = String(b && b.end_date || "");
     if(String(b && b.type || "room") === "event") return sum;
@@ -124,8 +125,8 @@ export function renderDashboard(root){
     if(overlapStart > overlapEnd) return sum;
 
     return sum + roomsCount_(b);
-  }, 0);
-  const eventCount = bookingsArr.reduce((sum,b)=>{
+ }, 0);
+  const eventCount = stats ? stats.eventBookings : bookingsArr.reduce((sum,b)=>{
     const s = String(b && b.start_date || "");
     const e = String(b && b.end_date || "");
     if(String(b && b.type || "") !== "event") return sum;
@@ -160,7 +161,7 @@ export function renderDashboard(root){
   }).length;
 
   // Pre-booked = today + future
-     const preBookedNights = bookingsArr.reduce((sum,b)=>{
+     const preBookedNights = stats ? stats.roomNights : bookingsArr.reduce((sum,b)=>{
     if(!isRoom(b)) return sum;
 
     const s = String(b && b.start_date || "");
@@ -181,7 +182,7 @@ export function renderDashboard(root){
     return sum + (safeNights * roomsCount_(b));
   }, 0);
 
-   const preBookedEvents = bookingsArr.reduce((sum,b)=>{
+  const preBookedEvents = stats ? stats.eventDays : bookingsArr.reduce((sum,b)=>{
     if(!isEvent(b)) return sum;
 
     const s = String(b && b.start_date || "");
@@ -203,7 +204,7 @@ export function renderDashboard(root){
   }, 0);
 
   // Monthly revenue directly from stored total_amount
-   const roomRevenueMonth = bookingsArr.reduce((sum,b)=>{
+   const roomRevenueMonth = stats ? stats.roomRevenue : bookingsArr.reduce((sum,b)=>{
     if(!isRoom(b)) return sum;
 
     const s = String(b && b.start_date || "");
@@ -229,7 +230,7 @@ export function renderDashboard(root){
     return sum + Math.round((totalAmount_(b) * safeOverlapNights) / safeTotalNights);
   }, 0);
 
-       const eventRevenueMonth = bookingsArr.reduce((sum,b)=>{
+    const eventRevenueMonth = stats ? stats.eventRevenue : bookingsArr.reduce((sum,b)=>{
     if(!isEvent(b)) return sum;
 
     const s = String(b && b.start_date || "");
