@@ -44,6 +44,21 @@ function fileToDataUrl_(file){
   });
 }
 
+function safeFilePart_(s){
+  return String(s || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+}
+
+function buildContractPdfName_(lead, status, startDateIso){
+  const companyPart = safeFilePart_(lead && lead.company_name ? lead.company_name : "Lead");
+  const statusPart = safeFilePart_(status || "DRAFT");
+  const datePart = String(startDateIso || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
+  return `Contract_${companyPart}_${statusPart}_${datePart}.pdf`;
+}
+
 function contractCard_(c, lead){
   return `
     <div class="listItem" data-id="${esc_(c.id)}">
@@ -241,19 +256,29 @@ function renderForm_(root, onBack, id){
       ? root.querySelector("#c_pdf").files[0]
       : null;
 
-    if(pdfFile){
-      if(String(pdfFile.type || "").toLowerCase() !== "application/pdf"){
+      if(pdfFile){
+      const fileType = String(pdfFile.type || "").toLowerCase();
+      const fileName = String(pdfFile.name || "");
+      const isPdf = (fileType === "application/pdf") || /\.pdf$/i.test(fileName);
+
+      if(!isPdf){
         alert("Please upload a PDF file only.");
         return;
       }
 
       const pdfData = await fileToDataUrl_(pdfFile);
       attachment_pdf_name = pdfFile.name || "contract.pdf";
-      attachment_pdf_type = pdfFile.type || "application/pdf";
+      attachment_pdf_type = fileType || "application/pdf";
       attachment_pdf_data = pdfData;
     }
 
-    const db2 = store.get();
+      const db2 = store.get();
+    const leadObj = leads.find(l => l.id === lead_id) || null;
+
+    if(pdfFile){
+      attachment_pdf_name = buildContractPdfName_(leadObj, status, start_date);
+    }
+
     const updated = {
       ...c,
       lead_id,
