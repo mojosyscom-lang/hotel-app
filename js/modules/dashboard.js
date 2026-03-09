@@ -52,6 +52,25 @@ function eventAmount_(b){
 
 function n_(v){ return Number(v)||0; }
 
+function goRoute_(route){
+  window.location.hash = "#" + route;
+  window.dispatchEvent(new PopStateEvent("popstate", {
+    state: { route }
+  }));
+}
+
+async function openBookingTable_(root, mode, monthKey){
+  const mod = await import("./table.js");
+  mod.renderBookingTablePage(root, {
+    mode,
+    monthKey,
+    search: "",
+    onBack: ()=> renderDashboard(root)
+  });
+}
+
+
+
 function barSvg_(items){
   // items: [{label, value}]
   const max = Math.max(1, ...items.map(x=>n_(x.value)));
@@ -303,123 +322,184 @@ export function renderDashboard(root){
     { label:"Event", value: eventCount }
   ];
 
-  root.innerHTML = `
+    root.innerHTML = `
    
     <div class="card">
-           <h2 style="font-size:16px; margin-top:0;">Dashboard Counts</h2>
+      <h2 style="font-size:16px; margin-top:0;">Dashboard Counts</h2>
 
       <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;">
-        <!-- Small stat card style: auto-fit based on screen width -->
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+
+        <button class="card" id="dash_leads_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Leads</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${leads}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_followups_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Follow-ups</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${followups}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_contracts_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Contracts</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px;">${contracts}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_room_booked_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Rooms Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${roomCount}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_event_booked_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Events Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${eventCount}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_terms_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Terms added?</div>
           <div style="font-size:20px; font-weight:900; margin-top:6px;">${termsDone}</div>
-        </div>
+        </button>
 
-               <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_today_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Rooms Booked Today</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${todayRoomCount}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${todayIso}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_today_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Today Events</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${todayEventCount}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${todayIso}</div>
-        </div>
+        </button>
 
         <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Nights Booked (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
-          <div class="small" style="margin-top:6px;" hidden/>Tap to view</div>
+          <div class="small" style="margin-top:6px;" hidden>Tap to view</div>
         </button>
 
         <button class="card" id="dash_pre_event_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Event Days (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">${preBookedEvents}</div>
-          <div class="small" style="margin-top:6px;" hidden/>Tap to view</div>
+          <div class="small" style="margin-top:6px;" hidden>Tap to view</div>
         </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_room_amount_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Room Amount (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">₹${roomRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
-        </div>
+        </button>
 
-        <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_event_amount_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Event Amount (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-event);">₹${eventRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
-        </div>
+        </button>
 
-                <div class="card" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px;">
+        <button class="card" id="dash_occupancy_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
           <div class="small">Occupancy (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${occupancyPct}%</div>
           <div class="small" style="margin-top:6px;">${bookedRoomNightsMonth}/${totalAvailableRoomNights || 0} room nights</div>
-        </div>
+        </button>
       </div>
-     
     </div>
 
-       <div class="card">
+    <div class="card">
       <h2 style="font-size:16px; margin-top:0;">Graph</h2>
       <p class="small" style="margin-bottom:10px;">Leads / Follow-ups / Contracts / Room / Event</p>
       ${barSvg_(items)}
     </div>
-
-    
   `;
 
 
-
-    const preRoomBtn = root.querySelector("#dash_pre_room_btn");
+    const leadsBtn = root.querySelector("#dash_leads_btn");
+  const followupsBtn = root.querySelector("#dash_followups_btn");
+  const contractsBtn = root.querySelector("#dash_contracts_btn");
+  const roomBookedBtn = root.querySelector("#dash_room_booked_btn");
+  const eventBookedBtn = root.querySelector("#dash_event_booked_btn");
+  const termsBtn = root.querySelector("#dash_terms_btn");
+  const todayRoomBtn = root.querySelector("#dash_today_room_btn");
+  const todayEventBtn = root.querySelector("#dash_today_event_btn");
+  const preRoomBtn = root.querySelector("#dash_pre_room_btn");
   const preEventBtn = root.querySelector("#dash_pre_event_btn");
+  const roomAmountBtn = root.querySelector("#dash_room_amount_btn");
+  const eventAmountBtn = root.querySelector("#dash_event_amount_btn");
+  const occupancyBtn = root.querySelector("#dash_occupancy_btn");
 
-   if(preRoomBtn){
-    preRoomBtn.addEventListener("click", async ()=>{
-      const mod = await import("./table.js");
-      mod.renderBookingTablePage(root, {
-        mode: "room",
-        monthKey: currentMonthKey,
-        search: "",
-        onBack: ()=> renderDashboard(root)
-      });
+  if(leadsBtn){
+    leadsBtn.addEventListener("click", ()=>{
+      goRoute_("leads");
     });
   }
 
-   if(preEventBtn){
+  if(followupsBtn){
+    followupsBtn.addEventListener("click", ()=>{
+      goRoute_("followups");
+    });
+  }
+
+  if(contractsBtn){
+    contractsBtn.addEventListener("click", ()=>{
+      goRoute_("contracts");
+    });
+  }
+
+  if(termsBtn){
+    termsBtn.addEventListener("click", ()=>{
+      goRoute_("terms");
+    });
+  }
+
+  if(roomBookedBtn){
+    roomBookedBtn.addEventListener("click", ()=>{
+      goRoute_("calendar");
+    });
+  }
+
+  if(eventBookedBtn){
+    eventBookedBtn.addEventListener("click", ()=>{
+      goRoute_("calendar");
+    });
+  }
+
+  if(todayRoomBtn){
+    todayRoomBtn.addEventListener("click", ()=>{
+      goRoute_("calendar");
+    });
+  }
+
+  if(todayEventBtn){
+    todayEventBtn.addEventListener("click", ()=>{
+      goRoute_("calendar");
+    });
+  }
+
+  if(preRoomBtn){
+    preRoomBtn.addEventListener("click", async ()=>{
+      await openBookingTable_(root, "room", currentMonthKey);
+    });
+  }
+
+  if(preEventBtn){
     preEventBtn.addEventListener("click", async ()=>{
-      const mod = await import("./table.js");
-      mod.renderBookingTablePage(root, {
-        mode: "event",
-        monthKey: currentMonthKey,
-        search: "",
-        onBack: ()=> renderDashboard(root)
-      });
+      await openBookingTable_(root, "event", currentMonthKey);
+    });
+  }
+
+  if(roomAmountBtn){
+    roomAmountBtn.addEventListener("click", async ()=>{
+      await openBookingTable_(root, "room", currentMonthKey);
+    });
+  }
+
+  if(eventAmountBtn){
+    eventAmountBtn.addEventListener("click", async ()=>{
+      await openBookingTable_(root, "event", currentMonthKey);
+    });
+  }
+
+  if(occupancyBtn){
+    occupancyBtn.addEventListener("click", async ()=>{
+      await openBookingTable_(root, "room", currentMonthKey);
     });
   }
 }
