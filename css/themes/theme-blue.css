@@ -2,7 +2,7 @@
   --accent: #2563eb;
   --accent2: #06b6d4;
 
---header-statusbar: #0a2a5a;
+--header-statusbar: rgba(20,110,200,.92);
 --meta-theme: var(--header-statusbar);
 --header-overlay-1: rgba(20,110,200,.92);
 --header-overlay-2: rgba(20,110,200,.92);
@@ -31,6 +31,7 @@
   --pad:14px;
 
 }
+
 
 
 
