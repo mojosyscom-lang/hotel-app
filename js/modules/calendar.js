@@ -667,7 +667,7 @@ function openEditSheet_(root, dayIso, booking){
       <div id="bk_room_chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
       <div class="small" id="bk_room_status" style="margin-top:6px;"></div>
     </div>
-    <div class="small" id="bk_amount_info" style="margin-top:8px; color:#444;"></div>
+        <div class="small" id="bk_amount_info" style="margin-top:8px; color:var(--text);"></div>
 
     <div class="label">Booker name / Guest Name</div>
     <input class="input" id="bk_booker" value="${esc_(b.booker_name||"")}" placeholder="Person name" />
