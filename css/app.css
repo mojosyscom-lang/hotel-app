@@ -103,9 +103,9 @@ body{
   overflow: hidden;
 }
 .brandLogo{
-  width: clamp(28px, 8vw, 34px);
-  height: clamp(28px, 8vw, 34px);
-  border-radius: 10px;
+  width: clamp(36px, 10vw, 44px);
+  height: clamp(36px, 10vw, 44px);
+  border-radius: 12px;
   object-fit: cover;
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
@@ -114,12 +114,13 @@ body{
 }
 
 .logoDot{
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: clamp(36px, 10vw, 44px);
+  height: clamp(36px, 10vw, 44px);
+  border-radius: 12px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
   box-shadow: 0 10px 30px rgba(0,0,0,.14) inset;
+  flex: 0 0 auto;
 }
 
 .brandTitle{
@@ -159,6 +160,7 @@ body{
 
 .iconBtn{
   border: 0;
+  outline: none;
   background: var(--chip-bg);
   color: var(--topbar-text);
   border-radius: 12px;
@@ -169,6 +171,7 @@ body{
   z-index: 2;
   min-width: 44px;
   min-height: 44px;
+  box-shadow: none;
 }
 
 /* ---------------- App container ---------------- */
@@ -834,6 +837,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
