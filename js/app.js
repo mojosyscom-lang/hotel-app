@@ -827,7 +827,7 @@ ${canInstallPwa ? `
     <div class="menuItem" data-menu="contracts">
       <div class="menuLeft">
         <div class="menuTitle">Contract Settings</div>
-        <div class="menuSub">Create, edit, delete and upload pdf's contracts</div>
+        <div class="menuSub">Create, edit, delete and upload contract PDFs</div>
       </div>
       <div class="menuArrow">›</div>
     </div>
@@ -1533,6 +1533,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
