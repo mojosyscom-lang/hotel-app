@@ -477,9 +477,10 @@ hr.sep{
 }
 
 .sheetBody{
-  padding: 12px;
-  max-height: 70vh;
+  padding: 10px;
+  flex: 1;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .menuItem{
@@ -820,14 +821,14 @@ hr.sep{
   border: 1px solid var(--border);
   border-radius: 18px 18px 0 0;
   box-shadow: var(--shadow);
-  padding: 6px 10px calc(env(safe-area-inset-bottom) + 12px) 10px;
-  transform: translateY(14px);
-  transition: transform .18s ease;
-  max-height: calc(100vh - env(safe-area-inset-top) - 10px);
-  min-height: min(78vh, 720px);
+
+  height: calc(100vh - env(safe-area-inset-top));
   display: flex;
   flex-direction: column;
-  touch-action: pan-y;
+
+  padding: 6px 10px calc(env(safe-area-inset-bottom) + 12px) 10px;
+  transform: translateY(14px);
+   transition: transform .2s ease;
 }
 
 /* optional: slight "open" feel */
@@ -893,6 +894,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
