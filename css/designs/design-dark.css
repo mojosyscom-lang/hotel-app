@@ -1,4 +1,4 @@
-:root{
+html:root{
   --bg: #0b0f17;
   --card: rgba(255,255,255,0.06);
   --text: rgba(255,255,255,0.92);
@@ -76,6 +76,15 @@ body{
   color: var(--btn-text);
   border-radius: 14px;
 }
+.iconBtn,
+.calNavBtn,
+.sheetClose,
+.manageBtn{
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+
 .btn.primary{
   border-color: transparent;
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
