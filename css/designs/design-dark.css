@@ -193,5 +193,5 @@ td{
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  color: var(--header-fg) !important;
+  color: var(--header-fg, var(--topbar-text)) !important;
 }
