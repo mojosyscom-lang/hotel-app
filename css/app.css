@@ -822,6 +822,12 @@ hr.sep{
   box-shadow: var(--shadow);
   padding: 6px 10px calc(env(safe-area-inset-bottom) + 12px) 10px;
   transform: translateY(14px);
+  transition: transform .18s ease;
+  max-height: calc(100vh - env(safe-area-inset-top) - 10px);
+  min-height: min(78vh, 720px);
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
 }
 
 /* optional: slight "open" feel */
@@ -836,6 +842,7 @@ hr.sep{
 
 #settings_sheet .sheetHeader{
   padding: 6px 10px;
+   flex: 0 0 auto;
 }
 
 #settings_sheet .sheetTitle{
@@ -845,6 +852,12 @@ hr.sep{
 
 #settings_sheet .sheetBody{
   padding: 8px 10px 10px 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--card);
 }
 
 /* Ensure manage popup is below settings */
@@ -880,6 +893,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
