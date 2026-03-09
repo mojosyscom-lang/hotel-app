@@ -81,21 +81,24 @@ export async function applyBranding(){
       const overlay2 = getComputedStyle(document.documentElement)
         .getPropertyValue("--header-overlay-2").trim() || "rgba(15,90,64,.78)";
 
-      topbar.style.backgroundImage =
-        `linear-gradient(90deg, ${overlay1} 0%, ${overlay2} 100%), url('${bg}')`;
+           topbar.style.backgroundImage =
+        `linear-gradient(135deg, ${overlay1} 0%, ${overlay2} 100%), url('${bg}')`;
 
       topbar.style.backgroundSize = "cover";
       topbar.style.backgroundPosition = "center";
+      topbar.style.backgroundRepeat = "no-repeat";
     }else{
       // No background image → still show a clean gradient header
-      topbar.style.backgroundImage = "";
+          topbar.style.backgroundImage = "";
       topbar.style.backgroundSize = "";
       topbar.style.backgroundPosition = "";
+      topbar.style.backgroundRepeat = "";
     }
   }
 
   await applyFavicons_();
 }
+
 
 
 
