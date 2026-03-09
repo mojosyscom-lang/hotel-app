@@ -42,6 +42,35 @@ function dataUrlToBlob_(dataUrl){
   return new Blob([bytes], { type: mime });
 }
 
+let pdfJsReadyPromise_ = null;
+
+function ensurePdfJs_(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(pdfJsReadyPromise_) return pdfJsReadyPromise_;
+
+  pdfJsReadyPromise_ = new Promise((resolve, reject)=>{
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js";
+    script.onload = ()=>{
+      if(!window.pdfjsLib){
+        reject(new Error("PDF.js failed to load"));
+        return;
+      }
+
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
+
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = ()=> reject(new Error("Could not load PDF.js"));
+    document.head.appendChild(script);
+  });
+
+  return pdfJsReadyPromise_;
+}
+
+
+
 function ensurePdfViewer_(){
   let back = document.getElementById("pdf_viewer_backdrop");
   let panel = document.getElementById("pdf_viewer_panel");
@@ -69,7 +98,7 @@ function ensurePdfViewer_(){
     flex-direction:column;
   `;
 
-  panel.innerHTML = `
+   panel.innerHTML = `
     <div style="
       display:flex;
       align-items:center;
@@ -91,31 +120,28 @@ function ensurePdfViewer_(){
       <button id="pdf_viewer_close" class="btn" type="button">Close</button>
     </div>
 
-    <iframe
-      id="pdf_viewer_frame"
-      title="PDF Viewer"
+    <div
+      id="pdf_viewer_pages"
       style="
         width:100%;
         height:100%;
-        border:0;
-        background:#fff;
+        overflow:auto;
+        background:#e5e7eb;
+        padding:12px;
         flex:1 1 auto;
+        -webkit-overflow-scrolling:touch;
       "
-    ></iframe>
+    ></div>
   `;
 
   document.body.appendChild(back);
   document.body.appendChild(panel);
 
   function closePdfViewer_(){
-    const frame = document.getElementById("pdf_viewer_frame");
-    const oldUrl = frame && frame.dataset.objectUrl ? frame.dataset.objectUrl : "";
-    if(oldUrl){
-      try{ URL.revokeObjectURL(oldUrl); }catch(e){}
-    }
-    if(frame){
-      frame.removeAttribute("src");
-      delete frame.dataset.objectUrl;
+    const pages = document.getElementById("pdf_viewer_pages");
+    if(pages){
+      pages.innerHTML = "";
+      delete pages.dataset.objectUrl;
     }
     back.style.display = "none";
     panel.style.display = "none";
@@ -127,7 +153,7 @@ function ensurePdfViewer_(){
   return { back, panel };
 }
 
-function openPdf_(contract){
+async function openPdf_(contract){
   const dataUrl = String(contract && contract.attachment_pdf_data || "").trim();
   if(!dataUrl){
     alert("No PDF saved for this contract.");
@@ -136,27 +162,83 @@ function openPdf_(contract){
 
   try{
     const { back, panel } = ensurePdfViewer_();
-    const blob = dataUrlToBlob_(dataUrl);
-    const url = URL.createObjectURL(blob);
-
+    const pagesEl = document.getElementById("pdf_viewer_pages");
     const titleEl = document.getElementById("pdf_viewer_title");
-    const frame = document.getElementById("pdf_viewer_frame");
 
     if(titleEl){
       titleEl.textContent = String(contract.attachment_pdf_name || "Contract PDF");
     }
 
-    if(frame){
-      const oldUrl = frame.dataset.objectUrl || "";
-      if(oldUrl){
-        try{ URL.revokeObjectURL(oldUrl); }catch(e){}
-      }
-      frame.dataset.objectUrl = url;
-      frame.src = url;
+    if(pagesEl){
+      pagesEl.innerHTML = `<div class="small">Loading PDF...</div>`;
     }
 
     back.style.display = "block";
     panel.style.display = "flex";
+
+    const blob = dataUrlToBlob_(dataUrl);
+    const pdfjsLib = await ensurePdfJs_();
+    const bytes = await blob.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+
+    if(!pagesEl) return;
+    pagesEl.innerHTML = "";
+
+    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
+      const page = await pdf.getPage(pageNum);
+
+      const wrap = document.createElement("div");
+      wrap.style.cssText = `
+        background:#fff;
+        margin:0 auto 14px auto;
+        border-radius:12px;
+        box-shadow:0 4px 14px rgba(0,0,0,.10);
+        overflow:hidden;
+        max-width:900px;
+      `;
+
+      const label = document.createElement("div");
+      label.style.cssText = `
+        padding:8px 12px;
+        font-size:12px;
+        color:#6b7280;
+        border-bottom:1px solid rgba(0,0,0,.06);
+        background:#fff;
+      `;
+      label.textContent = `Page ${pageNum} of ${pdf.numPages}`;
+
+      const canvas = document.createElement("canvas");
+      canvas.style.cssText = `
+        display:block;
+        width:100%;
+        height:auto;
+        background:#fff;
+      `;
+
+      wrap.appendChild(label);
+      wrap.appendChild(canvas);
+      pagesEl.appendChild(wrap);
+
+      const desiredWidth = Math.min(pagesEl.clientWidth - 24, 900);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const scale = desiredWidth / baseViewport.width;
+      const viewport = page.getViewport({ scale });
+
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(viewport.width * ratio);
+      canvas.height = Math.floor(viewport.height * ratio);
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+      await page.render({
+        canvasContext: ctx,
+        viewport
+      }).promise;
+    }
   }catch(e){
     console.error("PDF open failed", e);
     alert("Could not open PDF.");
@@ -195,10 +277,10 @@ function bindActions_(root){
     const btn = row.querySelector('button[data-act="view-pdf"]');
     if(!btn) return;
 
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", async ()=>{
       const contract = contracts.find(x=>x.id===id);
       if(!contract) return alert("Contract not found.");
-      openPdf_(contract);
+      await openPdf_(contract);
     });
   });
 }
@@ -232,3 +314,4 @@ export function renderContracts(root){
 
   bindActions_(root);
 }
+
