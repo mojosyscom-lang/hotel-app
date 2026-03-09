@@ -22,13 +22,145 @@ function hasPdf_(c){
   return !!String(c && c.attachment_pdf_data || "").trim();
 }
 
+function dataUrlToBlob_(dataUrl){
+  const parts = String(dataUrl || "").split(",");
+  if(parts.length < 2) throw new Error("Invalid PDF data");
+
+  const meta = parts[0];
+  const b64 = parts[1];
+  const mimeMatch = meta.match(/data:(.*?);base64/i);
+  const mime = mimeMatch ? mimeMatch[1] : "application/pdf";
+
+  const bin = atob(b64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+
+  for(let i=0;i<len;i++){
+    bytes[i] = bin.charCodeAt(i);
+  }
+
+  return new Blob([bytes], { type: mime });
+}
+
+function ensurePdfViewer_(){
+  let back = document.getElementById("pdf_viewer_backdrop");
+  let panel = document.getElementById("pdf_viewer_panel");
+
+  if(back && panel) return { back, panel };
+
+  back = document.createElement("div");
+  back.id = "pdf_viewer_backdrop";
+  back.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    background:rgba(0,0,0,.50);
+    display:none;
+  `;
+
+  panel = document.createElement("div");
+  panel.id = "pdf_viewer_panel";
+  panel.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:100001;
+    background:var(--card, #fff);
+    display:none;
+    flex-direction:column;
+  `;
+
+  panel.innerHTML = `
+    <div style="
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:calc(env(safe-area-inset-top) + 10px) 12px 10px 12px;
+      border-bottom:1px solid var(--border, rgba(0,0,0,.1));
+      background:var(--card, #fff);
+      flex:0 0 auto;
+    ">
+      <div id="pdf_viewer_title" style="
+        font-weight:800;
+        font-size:15px;
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      ">PDF Preview</div>
+      <button id="pdf_viewer_close" class="btn" type="button">Close</button>
+    </div>
+
+    <iframe
+      id="pdf_viewer_frame"
+      title="PDF Viewer"
+      style="
+        width:100%;
+        height:100%;
+        border:0;
+        background:#fff;
+        flex:1 1 auto;
+      "
+    ></iframe>
+  `;
+
+  document.body.appendChild(back);
+  document.body.appendChild(panel);
+
+  function closePdfViewer_(){
+    const frame = document.getElementById("pdf_viewer_frame");
+    const oldUrl = frame && frame.dataset.objectUrl ? frame.dataset.objectUrl : "";
+    if(oldUrl){
+      try{ URL.revokeObjectURL(oldUrl); }catch(e){}
+    }
+    if(frame){
+      frame.removeAttribute("src");
+      delete frame.dataset.objectUrl;
+    }
+    back.style.display = "none";
+    panel.style.display = "none";
+  }
+
+  back.addEventListener("click", closePdfViewer_);
+  panel.querySelector("#pdf_viewer_close").addEventListener("click", closePdfViewer_);
+
+  return { back, panel };
+}
+
 function openPdf_(contract){
   const dataUrl = String(contract && contract.attachment_pdf_data || "").trim();
   if(!dataUrl){
     alert("No PDF saved for this contract.");
     return;
   }
-  window.open(dataUrl, "_blank");
+
+  try{
+    const { back, panel } = ensurePdfViewer_();
+    const blob = dataUrlToBlob_(dataUrl);
+    const url = URL.createObjectURL(blob);
+
+    const titleEl = document.getElementById("pdf_viewer_title");
+    const frame = document.getElementById("pdf_viewer_frame");
+
+    if(titleEl){
+      titleEl.textContent = String(contract.attachment_pdf_name || "Contract PDF");
+    }
+
+    if(frame){
+      const oldUrl = frame.dataset.objectUrl || "";
+      if(oldUrl){
+        try{ URL.revokeObjectURL(oldUrl); }catch(e){}
+      }
+      frame.dataset.objectUrl = url;
+      frame.src = url;
+    }
+
+    back.style.display = "block";
+    panel.style.display = "flex";
+  }catch(e){
+    console.error("PDF open failed", e);
+    alert("Could not open PDF.");
+  }
 }
 
 function contractCard_(c, lead){
@@ -99,8 +231,4 @@ export function renderContracts(root){
   }).join("");
 
   bindActions_(root);
-}
-
-export function onFabContracts(){
-  // read-only screen now
 }
