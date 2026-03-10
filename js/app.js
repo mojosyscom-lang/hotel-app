@@ -1135,9 +1135,15 @@ async function renderNotificationsSettings_(){
       if(!("serviceWorker" in navigator)) throw new Error("Service worker not supported");
       const reg = await navigator.serviceWorker.ready;
 
-      await reg.showNotification("Hotel CRM", {
+           await reg.showNotification("Hotel CRM", {
         body: "Local notification test successful ✅",
-        data: { url: "./" }
+        data: { url: "./" },
+        icon: "./assets/icons/icon-192.png",
+        badge: "./assets/icons/icon-192.png",
+        tag: "hotelcrm-local-test",
+        renotify: true,
+        requireInteraction: true,
+        silent: false
       });
 
       alert("Local notification sent ✅");
@@ -1690,6 +1696,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
