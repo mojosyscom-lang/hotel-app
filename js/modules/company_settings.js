@@ -100,9 +100,21 @@ export async function renderCompanySettings(hostEl, onBack){
         <div></div>
       </div>
 
-      <div class="label">Room Numbers</div>
+         <div class="label">Room Numbers</div>
       <textarea class="textarea" id="c_room_numbers" placeholder="Example: 101,102,103,104">${esc_(c.room_numbers || "")}</textarea>
       <div class="small" style="margin-top:6px;">Optional. Add comma-separated room numbers for exact room suggestions and room conflict checks.</div>
+
+      <div class="row">
+        <div>
+          <div class="label">Default Check-in Time</div>
+          <input class="input" id="c_checkin_time" type="time" value="${esc_(c.checkin_time || "14:00")}" />
+        </div>
+        <div>
+          <div class="label">Default Check-out Time</div>
+          <input class="input" id="c_checkout_time" type="time" value="${esc_(c.checkout_time || "12:00")}" />
+        </div>
+      </div>
+      <div class="small" style="margin-top:6px;">These times will be used for room availability logic in Calendar.</div>
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Header Branding</h2>
@@ -174,8 +186,10 @@ export async function renderCompanySettings(hostEl, onBack){
       phone: hostEl.querySelector("#c_phone").value.trim(),
       address: hostEl.querySelector("#c_address").value.trim(),
             gstin: hostEl.querySelector("#c_gstin").value.trim(),
-      total_rooms: hostEl.querySelector("#c_total_rooms").value.trim(),
+          total_rooms: hostEl.querySelector("#c_total_rooms").value.trim(),
       room_numbers: hostEl.querySelector("#c_room_numbers").value.trim(),
+      checkin_time: hostEl.querySelector("#c_checkin_time").value.trim() || "14:00",
+      checkout_time: hostEl.querySelector("#c_checkout_time").value.trim() || "12:00",
 
       bank_name: hostEl.querySelector("#b_name").value.trim(),
       bank_branch: hostEl.querySelector("#b_branch").value.trim(),
