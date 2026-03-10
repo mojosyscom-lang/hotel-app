@@ -201,11 +201,52 @@ function inRange_(dayIso, startIso, endIso){
   return (dayIso >= startIso && dayIso <= endIso);
 }
 
-function bookingsOverlap_(startA, endA, startB, endB){
+function bookingsOverlap_(db, startA, endA, startB, endB){
   if(!startA || !endA || !startB || !endB) return false;
-  // hotel logic:
-  // checkout on same day and next checkin on same day should be allowed
-  return (startA < endB && endA > startB);
+
+  const company = db?.company || {};
+  const checkin = String(company.checkin_time || "14:00").trim() || "14:00";
+  const checkout = String(company.checkout_time || "12:00").trim() || "12:00";
+
+  const [cinH, cinM] = checkin.split(":").map(x=>parseInt(x, 10));
+  const [coutH, coutM] = checkout.split(":").map(x=>parseInt(x, 10));
+
+  const sA = parseIso_(startA);
+  const eA = parseIso_(endA);
+  const sB = parseIso_(startB);
+  const eB = parseIso_(endB);
+
+  if(!sA || !eA || !sB || !eB) return false;
+
+  const startADt = new Date(
+    sA.getFullYear(), sA.getMonth(), sA.getDate(),
+    isFinite(cinH) ? cinH : 14,
+    isFinite(cinM) ? cinM : 0,
+    0, 0
+  );
+
+  const endADt = new Date(
+    eA.getFullYear(), eA.getMonth(), eA.getDate(),
+    isFinite(coutH) ? coutH : 12,
+    isFinite(coutM) ? coutM : 0,
+    0, 0
+  );
+
+  const startBDt = new Date(
+    sB.getFullYear(), sB.getMonth(), sB.getDate(),
+    isFinite(cinH) ? cinH : 14,
+    isFinite(cinM) ? cinM : 0,
+    0, 0
+  );
+
+  const endBDt = new Date(
+    eB.getFullYear(), eB.getMonth(), eB.getDate(),
+    isFinite(coutH) ? coutH : 12,
+    isFinite(coutM) ? coutM : 0,
+    0, 0
+  );
+
+  return (startADt < endBDt && endADt > startBDt);
 }
 
 function getCompanyRoomNumbers_(db){
@@ -251,7 +292,7 @@ function countBookedRoomsInRange_(db, start_date, end_date, ignoreId){
     const e = String(b.end_date || "");
     if(!s || !e) continue;
 
-    if(!bookingsOverlap_(start_date, end_date, s, e)) continue;
+       if(!bookingsOverlap_(db, start_date, end_date, s, e)) continue;
 
     const savedRoomsCount = num0_(b.rooms_count || 0);
     const fallbackRoomCount = String(b.room_no || "")
@@ -289,7 +330,7 @@ function roomConflict_(db, room, start_date, end_date, ignoreId){
     if(!s || !e) continue;
 
        // hotel overlap check (same-day checkout/check-in allowed)
-    if(bookingsOverlap_(start_date, end_date, s, e)){
+    if(bookingsOverlap_(db, start_date, end_date, s, e)){
       return b;
     }
   }
@@ -533,8 +574,7 @@ function openDaySheet_(root, dayIso){
       ? `${booker ? esc_(booker) : "-"}${phone ? " • " + esc_(phone) : ""}`
       : "";
 
-    const time = String(b.start_time || "").trim();
-    const arrive = (time ? `${esc_(dayIso)} ${esc_(time)}` : `${esc_(dayIso)}`);
+       const arrive = `${esc_(b.start_date || dayIso)}`;
 
     return `
       <div class="listItem">
@@ -547,7 +587,7 @@ function openDaySheet_(root, dayIso){
             <div class="listMeta">
                             <div><b>${typeLabel}</b></div>
               ${who ? `<div><b>Booker:</b> ${who}</div>` : ``}
-              <div><b>Arrive:</b> ${arrive}</div>
+                       <div><b>Check In:</b> ${arrive}</div>
               <div>${range}</div>
               ${note ? `<div>${note}</div>` : ``}
             </div>
@@ -641,11 +681,11 @@ function openEditSheet_(root, dayIso, booking){
     <div class="label">Company name</div>
     <input class="input" id="bk_title" value="${esc_(b.title||"")}" placeholder="Hotel / Company name" />
 
-            <div class="label">Check In Date/time</div>
-      <input class="input" id="bk_start_dt" type="datetime-local" value="${esc_(toLocalDTValue_(bookingIsoFromParts_(b.start_date||dayIso, b.start_time||"09:00")))}" />
+           <div class="label">Check In Date</div>
+      <input class="input" id="bk_start" type="date" value="${esc_(b.start_date||dayIso)}" />
 
-    <div class="label">Check Out Date</div>
-    <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
+      <div class="label">Check Out Date</div>
+      <input class="input" id="bk_end" type="date" value="${esc_(b.end_date||dayIso)}" />
 
                      <div class="label" id="bk_room_label">Rooms + Tariff</div>
     <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;">
@@ -691,7 +731,7 @@ function openEditSheet_(root, dayIso, booking){
 
   document.getElementById("cal_close2").addEventListener("click", closeSheet_);
 
-  const startDtEl = document.getElementById("bk_start_dt");
+   const startEl = document.getElementById("bk_start");
   const endEl = document.getElementById("bk_end");
 
 const typeEl = document.getElementById("bk_type");
@@ -737,8 +777,7 @@ function syncAmountUi_(){
   if(!amountInfoEl) return;
 
   const type = String(typeEl?.value || "room");
-  const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
-  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
+   const start_date = String(startEl?.value || "").trim();
   const end_date = String(endEl?.value || "").trim();
   const rate = num0_(rateEl?.value || 0);
 
@@ -792,8 +831,7 @@ function syncAmountUi_(){
     return;
   }
 
-  const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
-  const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
+  const start_date = String(startEl?.value || "").trim();
   const end_date = String(endEl?.value || "").trim();
   const rawRooms = String(roomEl?.value || "");
   const requestedRooms = num0_(roomsCountEl?.value || 0) || rawRooms.split(",").map(x=>x.trim()).filter(Boolean).length;
@@ -1010,16 +1048,15 @@ if(rateEl){
   
 
 function clampRange_(){
-  const iso = fromLocalDTValue_(String(startDtEl?.value || ""));
-  const d = iso ? toLocalDTValue_(iso).slice(0,10) : ""; // YYYY-MM-DD
-  const e = String(endEl?.value || "");
+  const d = String(startEl?.value || "").trim();
+  const e = String(endEl?.value || "").trim();
   if(d && e && e < d){
     endEl.value = d;
   }
   syncRoomAvailabilityUi_();
   syncAmountUi_();
 }
-if(startDtEl) startDtEl.addEventListener("change", clampRange_);
+if(startEl) startEl.addEventListener("change", clampRange_);
 if(endEl) endEl.addEventListener("change", clampRange_);
 
       document.getElementById("bk_save").addEventListener("click", async ()=>{
@@ -1048,11 +1085,15 @@ if(endEl) endEl.addEventListener("change", clampRange_);
     const booker_name = String((document.getElementById("bk_booker")?.value||"")).trim();
     const contact_number = String((document.getElementById("bk_phone")?.value||"")).replace(/\D/g,"").slice(0,10);
     const note = document.getElementById("bk_note").value.trim();
-        const startIso = fromLocalDTValue_(String(startDtEl?.value || ""));
-    const start_date = startIso ? toLocalDTValue_(startIso).slice(0,10) : "";
-    const start_time = startIso ? toLocalDTValue_(startIso).slice(11,16) : "09:00";
+    const dbNow = store.get();
+    const company = dbNow?.company || {};
 
+    const start_date = String(startEl?.value || "").trim();
     const end_date = String(endEl.value||"").trim();
+
+    const start_time = String(type) === "room"
+      ? (String(company.checkin_time || "14:00").trim() || "14:00")
+      : "09:00";
 
         const rate = String(rateEl?.value || "").trim();
 
@@ -1073,7 +1114,7 @@ if(endEl) endEl.addEventListener("change", clampRange_);
       : (num0_(rate) * nightsCount * roomsCount);
 
        if(!start_date || !end_date){
-      alert("Please select start date/time and end date.");
+           alert("Please select check-in date and check-out date.");
       return;
     }
     if(end_date < start_date){
