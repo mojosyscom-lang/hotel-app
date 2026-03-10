@@ -879,6 +879,61 @@ function syncRoomUi_(){
   }
 }
 
+
+function getAvailableRoomsCount_(){
+  const type = String(typeEl?.value || "room");
+  if(type !== "room") return 0;
+
+  const start_date = String(startEl?.value || "").trim();
+  const end_date = String(endEl?.value || "").trim();
+  if(!start_date || !end_date) return 0;
+
+  const dbCheck = store.get();
+  ensureBookings_(dbCheck);
+
+  const ignoreId = (isEdit ? b.id : null);
+  const hotelTotalRooms = num0_(dbCheck?.company?.total_rooms || 0);
+
+  if(hotelTotalRooms <= 0) return 0;
+
+  const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, ignoreId);
+  return Math.max(0, hotelTotalRooms - alreadyBookedRooms);
+}
+
+function syncRoomsCountLimit_(showAlert){
+  if(!roomsCountEl) return;
+
+  const type = String(typeEl?.value || "room");
+  if(type !== "room"){
+    roomsCountEl.removeAttribute("max");
+    return;
+  }
+
+  const availableRooms = getAvailableRoomsCount_();
+
+  if(availableRooms > 0){
+    roomsCountEl.max = String(availableRooms);
+  }else{
+    roomsCountEl.removeAttribute("max");
+  }
+
+  const current = num0_(roomsCountEl.value || 0);
+  if(current && availableRooms >= 0 && current > availableRooms){
+    roomsCountEl.value = String(availableRooms);
+
+    if(showAlert){
+      alert(`Only ${availableRooms} room(s) available for selected dates.`);
+    }
+
+    if(!manualRoomsTouched){
+      maybeAutoPickRooms_();
+    }
+  }
+}
+
+
+
+  
 function syncAmountUi_(){
   if(!amountInfoEl) return;
 
@@ -960,8 +1015,11 @@ function syncAmountUi_(){
   const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, ignoreId);
   const availableRooms = Math.max(0, hotelTotalRooms - alreadyBookedRooms);
 
-  const availableExactRooms = getAvailableExactRooms_(dbCheck, start_date, end_date, ignoreId);
-  const bestNearbyRooms = requestedRooms ? getBestNearbyRooms_(availableExactRooms, requestedRooms) : [];
+   const availableExactRooms = getAvailableExactRooms_(dbCheck, start_date, end_date, ignoreId);
+  const enoughCapacityForRequest = requestedRooms > 0 ? requestedRooms <= availableRooms : true;
+  const bestNearbyRooms = (requestedRooms && enoughCapacityForRequest)
+    ? getBestNearbyRooms_(availableExactRooms, requestedRooms)
+    : [];
 
   let html = ``;
 
@@ -986,7 +1044,16 @@ function syncAmountUi_(){
   }
 
   if(requestedRooms){
-    if(bestNearbyRooms.length === requestedRooms){
+    if(!enoughCapacityForRequest){
+      html += `
+        <div style="margin-bottom:8px; color:#d93025;">
+          <b>Free room numbers found:</b> ${availableExactRooms.map(esc_).join(", ") || "-"}
+        </div>
+        <div style="margin-bottom:8px; color:#666;">
+          Room numbers may still look free individually, but total hotel capacity is not enough for this request.
+        </div>
+      `;
+    }else if(bestNearbyRooms.length === requestedRooms){
       html += `
         <div style="margin-bottom:8px; color:#188038;">
           <b>Best nearby rooms:</b> ${bestNearbyRooms.map(esc_).join(", ")}
@@ -1044,6 +1111,7 @@ function syncAmountUi_(){
 if(typeEl){
   typeEl.addEventListener("change", ()=>{
     syncRoomUi_();
+    syncRoomsCountLimit_(false);
     maybeAutoPickRooms_();
     syncRoomAvailabilityUi_();
     syncAmountUi_();
@@ -1186,6 +1254,7 @@ if(getRoomsList_().length){
 }
 syncRoomUi_();
 paintChips_();
+syncRoomsCountLimit_(false);
 maybeAutoPickRooms_();
 syncRoomAvailabilityUi_();
 syncAmountUi_();
@@ -1215,9 +1284,10 @@ if(phoneEl){
 }
 
 
- if(roomsCountEl){
+if(roomsCountEl){
   roomsCountEl.addEventListener("input", ()=>{
     roomsCountEl.value = String(roomsCountEl.value || "").replace(/\D/g,"").slice(0,3);
+    syncRoomsCountLimit_(true);
     maybeAutoPickRooms_();
     syncAmountUi_();
     syncRoomAvailabilityUi_();
@@ -1239,6 +1309,7 @@ function clampRange_(){
     endEl.value = addDays_(d, 1);
   }
 
+  syncRoomsCountLimit_(false);
   maybeAutoPickRooms_();
   syncRoomAvailabilityUi_();
   syncAmountUi_();
