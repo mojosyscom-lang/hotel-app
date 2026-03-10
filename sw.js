@@ -1,4 +1,5 @@
 /* sw.js — Hotel CRM (simple offline + update friendly) */
+importScripts("./push-sw.js");
 
 const CACHE_NAME = "hotelcrm-static-v1";
 
