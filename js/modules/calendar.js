@@ -1309,11 +1309,16 @@ if(endEl) endEl.addEventListener("change", clampRange_);
         }
       }
 
-      if(room_no){
+           if(room_no){
         const rooms = room_no
           .split(",")
           .map(x=>x.trim())
           .filter(Boolean);
+
+        if(rooms.length !== roomsCount){
+          alert(`You requested ${roomsCount} room(s), but selected ${rooms.length} room number(s). Please match them.`);
+          return;
+        }
 
         for(const r of rooms){
           const conflict = roomConflict_(
