@@ -750,6 +750,10 @@ await store.set(db2);
 function openEditSheet_(root, dayIso, booking){
   const isEdit = !!(booking && booking.id);
   let submitBusy = false;
+  const dbOpen = store.get();
+  const companyOpen = dbOpen?.company || {};
+  const defaultCheckinTime = String(companyOpen.checkin_time || "14:00").trim() || "14:00";
+
    const b = booking || {
     id: "",
     type: "room",
@@ -760,8 +764,8 @@ function openEditSheet_(root, dayIso, booking){
     contact_number: "",
     note: "",
     start_date: dayIso,
-    end_date: dayIso,
-    start_time: "09:00"
+    end_date: addDays_(dayIso, 1),
+    start_time: defaultCheckinTime
   };
 
   openSheet_(`
@@ -1084,6 +1088,10 @@ function maybeAutoPickRooms_(){
   ensureBookings_(dbCheck);
 
   const ignoreId = (isEdit ? b.id : null);
+  const hotelTotalRooms = num0_(dbCheck?.company?.total_rooms || 0);
+  const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, ignoreId);
+  const availableRooms = Math.max(0, hotelTotalRooms - alreadyBookedRooms);
+
   const availableExactRooms = getAvailableExactRooms_(dbCheck, start_date, end_date, ignoreId);
   const currentRooms = getRoomsList_();
 
@@ -1092,6 +1100,15 @@ function maybeAutoPickRooms_(){
     !hasRoomConflictList_(dbCheck, currentRooms, start_date, end_date, ignoreId);
 
   if(currentValid) return;
+
+  if((hotelTotalRooms > 0 && requestedRooms > availableRooms) || availableExactRooms.length < requestedRooms){
+    autoPickingRooms = true;
+    setRoomsList_([]);
+    autoPickingRooms = false;
+    syncRoomAvailabilityUi_();
+    syncAmountUi_();
+    return;
+  }
 
   const best = getBestNearbyRooms_(availableExactRooms, requestedRooms);
   if(best.length !== requestedRooms) return;
@@ -1217,9 +1234,11 @@ if(rateEl){
 function clampRange_(){
   const d = String(startEl?.value || "").trim();
   const e = String(endEl?.value || "").trim();
-  if(d && e && e < d){
-    endEl.value = d;
+
+  if(d && (!e || e <= d)){
+    endEl.value = addDays_(d, 1);
   }
+
   maybeAutoPickRooms_();
   syncRoomAvailabilityUi_();
   syncAmountUi_();
