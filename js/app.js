@@ -1099,6 +1099,7 @@ async function renderNotificationsSettings_(){
         <button class="btn primary" id="btn_enable_push">Enable</button>
         <button class="btn" id="btn_test_push">Send Test</button>
         <button class="btn" id="btn_local_test">Local Test</button>
+		<button class="btn" id="btn_direct_test">Direct Test</button>
       </div>
 
       <p class="small" style="margin-top:10px;">
@@ -1151,6 +1152,32 @@ async function renderNotificationsSettings_(){
       alert("Local test failed: " + String(e && e.message ? e.message : e));
     }
   });
+
+
+
+	  document.getElementById("btn_direct_test").addEventListener("click", async ()=>{
+    try{
+      if(typeof Notification === "undefined") throw new Error("Notification API not supported");
+      if(Notification.permission !== "granted") throw new Error("Notification permission not granted");
+
+      const n = new Notification("Hotel CRM", {
+        body: "Direct browser notification test ✅",
+        icon: "./assets/icons/icon-192.png",
+        tag: "hotelcrm-direct-test"
+      });
+
+      n.onclick = ()=>{
+        window.focus();
+        n.close();
+      };
+
+      alert("Direct notification sent ✅");
+    }catch(e){
+      alert("Direct test failed: " + String(e && e.message ? e.message : e));
+    }
+  });
+
+	
 
 	
 }
@@ -1667,7 +1694,22 @@ try{
     console.warn("Deep link parse failed", e);
   }
 
-
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("message", (event)=>{
+      const data = event.data || {};
+      if(data.type === "SW_DEBUG"){
+        console.log("🔔 SW_DEBUG:", data);
+      }
+      if(data.type === "DEEPLINK" && data.url){
+        try{
+          const u = new URL(data.url);
+          window.location.href = u.toString();
+        }catch(e){
+          console.warn("DEEPLINK message failed", e);
+        }
+      }
+    });
+  }
 
 
 	
@@ -1696,6 +1738,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
