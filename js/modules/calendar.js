@@ -838,6 +838,7 @@ const roomStatusEl = document.getElementById("bk_room_status");
 const amountInfoEl = document.getElementById("bk_amount_info");
 
 let autoPickingRooms = false;
+let manualRoomsTouched = false;
 
 /* -------------------------
    Room type toggle
@@ -1037,6 +1038,9 @@ if(typeEl){
   });
 }
 
+if(getRoomsList_().length){
+  manualRoomsTouched = true;
+}
 syncRoomUi_();
 maybeAutoPickRooms_();
 syncRoomAvailabilityUi_();
@@ -1068,6 +1072,7 @@ function setRoomsList_(arr){
 function maybeAutoPickRooms_(){
   const type = String(typeEl?.value || "room");
   if(type !== "room") return;
+  if(manualRoomsTouched) return;
 
   const start_date = String(startEl?.value || "").trim();
   const end_date = String(endEl?.value || "").trim();
@@ -1118,6 +1123,7 @@ function paintChips_(){
 function addRoom_(rn){
   rn = String(rn||"").replace(/\D/g,"");
   if(!rn) return;
+  manualRoomsTouched = true;
   const rooms = getRoomsList_();
   if(!rooms.includes(rn)) rooms.push(rn);
   setRoomsList_(rooms);
@@ -1128,6 +1134,7 @@ function addRoom_(rn){
 
 function removeRoom_(rn){
   rn = String(rn||"").trim();
+  manualRoomsTouched = true;
   const rooms = getRoomsList_().filter(x=>x !== rn);
   setRoomsList_(rooms);
   syncRoomAvailabilityUi_();
@@ -1167,6 +1174,7 @@ if(roomStatusEl){
     if(!btn) return;
     const rn = String(btn.getAttribute("data-sug-room") || "").trim();
     if(!rn) return;
+    manualRoomsTouched = true;
     addRoom_(rn);
   });
 }
