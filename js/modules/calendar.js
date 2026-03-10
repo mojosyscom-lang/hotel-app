@@ -1038,14 +1038,6 @@ if(typeEl){
   });
 }
 
-if(getRoomsList_().length){
-  manualRoomsTouched = true;
-}
-syncRoomUi_();
-maybeAutoPickRooms_();
-syncRoomAvailabilityUi_();
-syncAmountUi_();
-
 /* -------------------------
    Room numbers (phone keypad)
    - user types ONE room (digits only) then presses Add
@@ -1164,8 +1156,14 @@ if(chipsEl){
 }
 
 // initial paint (edit mode will already have b.room_no in hidden input)
+if(getRoomsList_().length){
+  manualRoomsTouched = true;
+}
+syncRoomUi_();
 paintChips_();
+maybeAutoPickRooms_();
 syncRoomAvailabilityUi_();
+syncAmountUi_();
 
 // Click suggestion → add room
 if(roomStatusEl){
@@ -1174,7 +1172,6 @@ if(roomStatusEl){
     if(!btn) return;
     const rn = String(btn.getAttribute("data-sug-room") || "").trim();
     if(!rn) return;
-    manualRoomsTouched = true;
     addRoom_(rn);
   });
 }
