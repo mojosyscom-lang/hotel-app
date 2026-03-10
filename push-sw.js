@@ -1,3 +1,11 @@
+async function notifyAllClients_(msg){
+  const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  for(const c of allClients){
+    c.postMessage(msg);
+  }
+}
+
+
 self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch(e){}
@@ -5,6 +13,28 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Hotel CRM";
   const body = data.body || "Notification";
   const url = data.url || "/";
+
+  event.waitUntil((async ()=>{
+    await notifyAllClients_({
+      type: "SW_DEBUG",
+      source: "push",
+      title,
+      body,
+      url
+    });
+
+    await self.registration.showNotification(title, {
+      body,
+      data: { url },
+      icon: "./assets/icons/icon-192.png",
+      badge: "./assets/icons/icon-192.png",
+      tag: "hotelcrm-test",
+      renotify: true,
+      requireInteraction: true,
+      silent: false
+    });
+  })());
+});
 
   event.waitUntil(
     self.registration.showNotification(title, {
