@@ -829,14 +829,14 @@ hr.sep{
   border-radius: 18px 18px 0 0;
   box-shadow: var(--shadow);
 
-  height: min(78vh, 720px);
-  min-height: 340px;
+  max-height: min(78vh, 720px);
   display: flex;
   flex-direction: column;
 
   padding: 4px 8px calc(env(safe-area-inset-bottom) + 8px) 8px;
   transform: translateY(14px);
   transition: transform .2s ease;
+  overflow: hidden;
 }
 
 /* optional: slight "open" feel */
@@ -862,8 +862,6 @@ hr.sep{
 
 #settings_sheet .sheetBody{
   padding: 6px 8px 8px 8px;
-  flex: 1 1 auto;
-  min-height: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -903,6 +901,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
