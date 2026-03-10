@@ -261,9 +261,17 @@ function getCompanyRoomNumbers_(db){
 }
 
 function getKnownRooms_(db){
-  const set = new Set();
+  const companyRooms = getCompanyRoomNumbers_(db);
 
-  getCompanyRoomNumbers_(db).forEach(r=> set.add(r));
+  if(companyRooms.length){
+    return companyRooms.slice().sort((a,b)=>{
+      const na = Number(a), nb = Number(b);
+      if(isFinite(na) && isFinite(nb)) return na - nb;
+      return String(a).localeCompare(String(b));
+    });
+  }
+
+  const set = new Set();
 
   (db.bookings || []).forEach(bb=>{
     String(bb.room_no || "")
