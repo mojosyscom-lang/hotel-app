@@ -332,11 +332,14 @@ button:disabled{
   justify-content: space-between;
   gap: 10px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .listTitle{
   font-weight: 800;
   font-size: 16px;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .badge{
@@ -347,6 +350,8 @@ button:disabled{
   color: var(--muted);
   background: rgba(255,255,255,0.06); /* design files can override card transparency */
   white-space: nowrap;
+  flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .listMeta{
@@ -354,6 +359,7 @@ button:disabled{
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
+  word-break: break-word;
 }
 
 /* ---------------- Bottom nav ---------------- */
@@ -816,13 +822,14 @@ hr.sep{
 #settings_sheet .sheet{
   width: 100%;
   max-width: 720px;
-  margin: 0 auto;
+  margin: 0 auto 0 auto;
   background: var(--card);
   border: 1px solid var(--border);
+  border-bottom: 0;
   border-radius: 18px 18px 0 0;
   box-shadow: var(--shadow);
 
-  max-height: min(78vh, 720px);
+  height: min(78vh, 720px);
   min-height: 340px;
   display: flex;
   flex-direction: column;
@@ -896,6 +903,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
