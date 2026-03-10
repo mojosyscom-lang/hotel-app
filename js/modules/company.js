@@ -35,6 +35,58 @@ function row_(label, value){
   `;
 }
 
+function roomChips_(value){
+  const rooms = String(value || "")
+    .split(",")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  if(!rooms.length){
+    return `<span class="small">—</span>`;
+  }
+
+  return `
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">
+      ${rooms.map(r=>`
+        <span style="
+          display:inline-flex;
+          align-items:center;
+          padding:8px 12px;
+          border-radius:999px;
+          background:var(--chip-bg, rgba(0,0,0,0.06));
+          border:1px solid var(--border);
+          font-weight:700;
+          line-height:1;
+        ">${esc_(r)}</span>
+      `).join("")}
+    </div>
+  `;
+}
+
+
+function statCard_(label, value){
+  const v = String(value || "").trim();
+  return `
+    <div style="
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      background:var(--card);
+      min-height:72px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    ">
+      <div class="small" style="margin-bottom:6px;">${esc_(label)}</div>
+      <div style="font-weight:800; font-size:18px; line-height:1.2;">
+        ${v ? esc_(v) : `<span class="small">—</span>`}
+      </div>
+    </div>
+  `;
+}
+
+
+
 export async function renderCompany(root){
   const db = store.get();
   const c = db.company || {};
@@ -52,10 +104,27 @@ export async function renderCompany(root){
         <div>${row_("GSTIN", c.gstin)}</div>
       </div>
 
-      <div class="label">Address</div>
+          <div class="label">Address</div>
       <div style="white-space:pre-wrap; font-weight:700; line-height:1.35;">
         ${String(c.address || "").trim() ? esc_(c.address) : `<span class="small">—</span>`}
       </div>
+
+            <hr class="sep" />
+      <h2 style="font-size:16px; margin-top:0;">Hotel Settings</h2>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(3, minmax(0,1fr));
+        gap:10px;
+        margin-top:8px;
+      ">
+        ${statCard_("Total Rooms", c.total_rooms)}
+        ${statCard_("Check-in", c.checkin_time)}
+        ${statCard_("Check-out", c.checkout_time)}
+      </div>
+
+      <div class="label" style="margin-top:14px;">Room Numbers</div>
+      ${roomChips_(c.room_numbers)}
 
       <hr class="sep" />
       <h2 style="font-size:16px; margin-top:0;">Branding</h2>
@@ -94,4 +163,5 @@ export async function renderCompany(root){
 export function onFabCompany(root){
   // No FAB action in read-only view
 }
+
 
