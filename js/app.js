@@ -223,7 +223,7 @@ async function ensurePushEnabled_(){
   const s = loadSettings_();
   const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
 
-  await fetch(`${PUSH_WORKER_URL}/subscribe`, {
+  const res = await fetch(`${PUSH_WORKER_URL}/subscribe`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({
@@ -232,18 +232,56 @@ async function ensurePushEnabled_(){
     })
   });
 
-  return { ok:true, deviceId };
+  let data = null;
+  try{
+    data = await res.json();
+  }catch(e){
+    data = null;
+  }
+
+  if(!res.ok){
+    throw new Error(
+      (data && (data.error || data.message)) ||
+      `HTTP ${res.status}`
+    );
+  }
+
+  if(data && data.ok === false){
+    throw new Error(data.error || data.message || "Subscribe failed");
+  }
+
+  return { ok:true, deviceId, data };
 }
 
 async function sendTestPush_(){
   const s = loadSettings_();
   const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
 
-  await fetch(`${PUSH_WORKER_URL}/test`, {
+  const res = await fetch(`${PUSH_WORKER_URL}/test`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ device_id: deviceId })
   });
+
+  let data = null;
+  try{
+    data = await res.json();
+  }catch(e){
+    data = null;
+  }
+
+  if(!res.ok){
+    throw new Error(
+      (data && (data.error || data.message)) ||
+      `HTTP ${res.status}`
+    );
+  }
+
+  if(data && data.ok === false){
+    throw new Error(data.error || data.message || "Test push failed");
+  }
+
+  return data || { ok:true };
 }
 
 
@@ -851,7 +889,7 @@ ${canInstallPwa ? `
     <div class="menuItem" data-menu="notifications">
       <div class="menuLeft">
         <div class="menuTitle">Notifications</div>
-        <div class="menuSub">Enabled ✅ (send test)</div>
+        <div class="menuSub">✅ Permission granted (open to test)</div>
       </div>
       <div class="menuArrow">›</div>
     </div>
@@ -1030,7 +1068,7 @@ try{
 
 
 
-function renderNotificationsSettings_(){
+async function renderNotificationsSettings_(){
   const body = document.getElementById("settings_sheet_body");
   if(!body) return;
 
@@ -1038,16 +1076,29 @@ function renderNotificationsSettings_(){
   const s = loadSettings_();
   const deviceId = String(s.device_id || getDeviceId_()).trim() || "default";
 
+  let subStatus = "unknown";
+  try{
+    if("serviceWorker" in navigator){
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      subStatus = sub ? "subscribed" : "not subscribed";
+    }
+  }catch(e){
+    subStatus = "check failed";
+  }
+
   body.innerHTML = `
     <div class="card">
       <h2>Notifications</h2>
-      <div class="small"><b>Status:</b> ${perm}</div>
+            <div class="small"><b>Permission:</b> ${perm}</div>
+      <div class="small"><b>Subscription:</b> ${subStatus}</div>
       <div class="small"><b>Device ID:</b> ${deviceId}</div>
 
-      <div class="btnRow" style="margin-top:12px;">
+          <div class="btnRow" style="margin-top:12px;">
         <button class="btn" id="btn_back_menu">Back</button>
         <button class="btn primary" id="btn_enable_push">Enable</button>
         <button class="btn" id="btn_test_push">Send Test</button>
+        <button class="btn" id="btn_local_test">Local Test</button>
       </div>
 
       <p class="small" style="margin-top:10px;">
@@ -1062,7 +1113,7 @@ function renderNotificationsSettings_(){
     try{
       await ensurePushEnabled_();
       alert("Notifications enabled ✅");
-      renderSettingsMenu_();
+      await renderNotificationsSettings_();
     }catch(e){
       alert("Enable failed: " + String(e && e.message ? e.message : e));
     }
@@ -1072,10 +1123,30 @@ function renderNotificationsSettings_(){
     try{
       await sendTestPush_();
       alert("Test push requested ✅ (check your device)");
+      await renderNotificationsSettings_();
     }catch(e){
       alert("Test push failed: " + String(e && e.message ? e.message : e));
     }
   });
+
+
+	  document.getElementById("btn_local_test").addEventListener("click", async ()=>{
+    try{
+      if(!("serviceWorker" in navigator)) throw new Error("Service worker not supported");
+      const reg = await navigator.serviceWorker.ready;
+
+      await reg.showNotification("Hotel CRM", {
+        body: "Local notification test successful ✅",
+        data: { url: "./" }
+      });
+
+      alert("Local notification sent ✅");
+    }catch(e){
+      alert("Local test failed: " + String(e && e.message ? e.message : e));
+    }
+  });
+
+	
 }
 
 
@@ -1358,10 +1429,17 @@ if(laterBtn){
     }
     await new Promise(resolve => setTimeout(resolve, 700));
 
-    setStage_("Refreshing app engine…", 58);
+      setStage_("Refreshing app engine…", 58);
     if("serviceWorker" in navigator){
       const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(reg => reg.unregister()));
+      await Promise.all(
+        regs.map(reg => {
+          if(reg.waiting){
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+          return Promise.resolve();
+        })
+      );
     }
     await new Promise(resolve => setTimeout(resolve, 900));
 
@@ -1492,6 +1570,16 @@ try{
 
 
 
+	  try{
+    if(typeof Notification !== "undefined" && Notification.permission === "granted"){
+      await ensurePushEnabled_();
+      console.log("✅ Push subscription auto-repaired");
+    }
+  }catch(e){
+    console.warn("Push auto-repair skipped/failed", e);
+  }
+
+
 
 
 	
@@ -1602,6 +1690,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
