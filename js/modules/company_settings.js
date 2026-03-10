@@ -6,6 +6,22 @@ function esc_(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
 
+
+
+function buildDefaultRoomNumbers_(totalRooms){
+  const total = parseInt(totalRooms, 10);
+  if(!isFinite(total) || total <= 0) return "";
+
+  const arr = [];
+  for(let i = 1; i <= total; i++){
+    arr.push(String(100 + i));
+  }
+  return arr.join(",");
+}
+
+
+
+
 async function paintPreviews_(root){
   const logo = await getObjectUrl("company_logo");
   const bg = await getObjectUrl("company_bg");
@@ -169,6 +185,36 @@ export async function renderCompanySettings(hostEl, onBack){
     </div>
   `;
 
+  const totalRoomsEl = hostEl.querySelector("#c_total_rooms");
+  const roomNumbersEl = hostEl.querySelector("#c_room_numbers");
+
+  let roomNumbersTouched = false;
+
+  if(roomNumbersEl){
+    roomNumbersEl.addEventListener("input", ()=>{
+      roomNumbersTouched = true;
+    });
+  }
+
+  if(totalRoomsEl){
+    totalRoomsEl.addEventListener("input", ()=>{
+      totalRoomsEl.value = String(totalRoomsEl.value || "").replace(/\D/g, "").slice(0,3);
+
+      if(!roomNumbersEl) return;
+      if(roomNumbersTouched) return;
+      if(String(roomNumbersEl.value || "").trim()) return;
+
+      roomNumbersEl.value = buildDefaultRoomNumbers_(totalRoomsEl.value);
+    });
+  }
+
+  if(totalRoomsEl && roomNumbersEl && !String(roomNumbersEl.value || "").trim()){
+    roomNumbersEl.value = buildDefaultRoomNumbers_(totalRoomsEl.value);
+  }
+
+
+
+  
   hostEl.querySelector("#btn_company_back").addEventListener("click", ()=>{
     if(typeof onBack === "function") onBack();
   });
@@ -187,7 +233,7 @@ export async function renderCompanySettings(hostEl, onBack){
       address: hostEl.querySelector("#c_address").value.trim(),
             gstin: hostEl.querySelector("#c_gstin").value.trim(),
           total_rooms: hostEl.querySelector("#c_total_rooms").value.trim(),
-      room_numbers: hostEl.querySelector("#c_room_numbers").value.trim(),
+       room_numbers: hostEl.querySelector("#c_room_numbers").value.trim() || buildDefaultRoomNumbers_(hostEl.querySelector("#c_total_rooms").value.trim()),
       checkin_time: hostEl.querySelector("#c_checkin_time").value.trim() || "14:00",
       checkout_time: hostEl.querySelector("#c_checkout_time").value.trim() || "12:00",
 
