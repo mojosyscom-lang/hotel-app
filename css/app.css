@@ -810,19 +810,20 @@ hr.sep{
    SETTINGS SHEET (FIX)
    =========================== */
 #settings_sheet{
-  position: fixed;
-  inset: 0;
-  z-index: 9998; /* above manage */
-  display: none; /* app.js toggles this */
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
+  position: fixed;
+  inset: 0;
+  z-index: 9998; /* above manage */
+  display: none; /* app.js toggles this */
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  padding: 0 !important; /* Severs any invisible padding holding the sheet aloft */
 }
 
 #settings_sheet .sheet{
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto 0 auto;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 0 auto !important; /* Anchors the foundation firmly to absolute zero */
   background: var(--card);
   border: 1px solid var(--border);
   border-bottom: 0;
@@ -901,6 +902,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
