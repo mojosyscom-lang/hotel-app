@@ -280,6 +280,64 @@ function getKnownRooms_(db){
   });
 }
 
+
+
+function hasRoomConflictList_(db, rooms, start_date, end_date, ignoreId){
+  const arr = Array.isArray(rooms) ? rooms : [];
+  for(const r of arr){
+    if(roomConflict_(db, r, start_date, end_date, ignoreId)) return true;
+  }
+  return false;
+}
+
+function getAvailableExactRooms_(db, start_date, end_date, ignoreId){
+  return getKnownRooms_(db).filter(r=>{
+    return !roomConflict_(db, r, start_date, end_date, ignoreId);
+  });
+}
+
+function getBestNearbyRooms_(rooms, needed){
+  const list = (Array.isArray(rooms) ? rooms : []).slice();
+  const count = num0_(needed);
+
+  if(!count || list.length < count) return [];
+
+  list.sort((a,b)=>{
+    const na = Number(a), nb = Number(b);
+    if(isFinite(na) && isFinite(nb)) return na - nb;
+    return String(a).localeCompare(String(b));
+  });
+
+  let best = [];
+  let bestScore = Infinity;
+
+  for(let i = 0; i <= list.length - count; i++){
+    const chunk = list.slice(i, i + count);
+
+    const nums = chunk.map(x=>Number(x));
+    const allNumeric = nums.every(n=>isFinite(n));
+
+    let score;
+    if(allNumeric){
+      score = nums[nums.length - 1] - nums[0];
+    }else{
+      score = 100000 + i;
+    }
+
+    if(score < bestScore){
+      bestScore = score;
+      best = chunk;
+    }
+  }
+
+  return best;
+}
+
+
+
+
+
+
 function countBookedRoomsInRange_(db, start_date, end_date, ignoreId){
   const list = Array.isArray(db.bookings) ? db.bookings : [];
   let total = 0;
@@ -340,6 +398,39 @@ function roomConflict_(db, room, start_date, end_date, ignoreId){
 
 function ensureBookings_(db){
   if(!Array.isArray(db.bookings)) db.bookings = [];
+
+  const company = db?.company || {};
+  const defaultCheckin = String(company.checkin_time || "14:00").trim() || "14:00";
+
+  let changed = false;
+
+  db.bookings.forEach(b=>{
+    if(String(b.type || "room") !== "room") return;
+
+    if(!String(b.start_time || "").trim()){
+      b.start_time = defaultCheckin;
+      changed = true;
+    }
+
+    const savedRoomsCount = num0_(b.rooms_count || 0);
+    if(!savedRoomsCount){
+      const fallbackRoomCount = String(b.room_no || "")
+        .split(",")
+        .map(x=>x.trim())
+        .filter(Boolean)
+        .length;
+
+      if(fallbackRoomCount > 0){
+        b.rooms_count = fallbackRoomCount;
+        changed = true;
+      }
+    }
+  });
+
+  if(changed){
+    store.set(db);
+  }
+
   return db;
 }
 
@@ -746,6 +837,8 @@ const phoneEl = document.getElementById("bk_phone");
 const roomStatusEl = document.getElementById("bk_room_status");
 const amountInfoEl = document.getElementById("bk_amount_info");
 
+let autoPickingRooms = false;
+
 /* -------------------------
    Room type toggle
 ------------------------- */
@@ -853,7 +946,9 @@ function syncAmountUi_(){
   const hotelTotalRooms = num0_(dbCheck?.company?.total_rooms || 0);
   const alreadyBookedRooms = countBookedRoomsInRange_(dbCheck, start_date, end_date, ignoreId);
   const availableRooms = Math.max(0, hotelTotalRooms - alreadyBookedRooms);
-  const allRooms = getKnownRooms_(dbCheck);
+
+  const availableExactRooms = getAvailableExactRooms_(dbCheck, start_date, end_date, ignoreId);
+  const bestNearbyRooms = requestedRooms ? getBestNearbyRooms_(availableExactRooms, requestedRooms) : [];
 
   let html = ``;
 
@@ -877,6 +972,22 @@ function syncAmountUi_(){
     html += `<div style="margin-bottom:8px; color:#888;">Set Total Rooms in Company Settings for hotel capacity checking.</div>`;
   }
 
+  if(requestedRooms){
+    if(bestNearbyRooms.length === requestedRooms){
+      html += `
+        <div style="margin-bottom:8px; color:#188038;">
+          <b>Best nearby rooms:</b> ${bestNearbyRooms.map(esc_).join(", ")}
+        </div>
+      `;
+    }else if(availableExactRooms.length){
+      html += `
+        <div style="margin-bottom:8px; color:#666;">
+          <b>Exact free room numbers:</b> ${availableExactRooms.map(esc_).join(", ")}
+        </div>
+      `;
+    }
+  }
+
   if(!rooms.length){
     html += `<div style="color:#888;">Room numbers are optional. Add them only if you want exact room conflict check.</div>`;
     roomStatusEl.innerHTML = html;
@@ -895,16 +1006,13 @@ function syncAmountUi_(){
   });
 
   let sugHtml = "";
-  if(hasConflict && allRooms.length){
+  if(hasConflict && availableExactRooms.length){
     const typedSet = new Set(rooms);
 
-    const available = allRooms.filter(rn=>{
-      if(typedSet.has(rn)) return false;
-      const c = roomConflict_(dbCheck, rn, start_date, end_date, ignoreId);
-      return !c;
-    });
+    const top = availableExactRooms
+      .filter(rn=> !typedSet.has(rn))
+      .slice(0, 8);
 
-    const top = available.slice(0, 6);
     if(top.length){
       sugHtml = `
         <div style="margin-top:8px;">
@@ -923,14 +1031,16 @@ function syncAmountUi_(){
 if(typeEl){
   typeEl.addEventListener("change", ()=>{
     syncRoomUi_();
+    maybeAutoPickRooms_();
     syncRoomAvailabilityUi_();
     syncAmountUi_();
   });
 }
 
 syncRoomUi_();
-  syncRoomAvailabilityUi_();
-  syncAmountUi_();
+maybeAutoPickRooms_();
+syncRoomAvailabilityUi_();
+syncAmountUi_();
 
 /* -------------------------
    Room numbers (phone keypad)
@@ -944,14 +1054,53 @@ function getRoomsList_(){
 }
 function setRoomsList_(arr){
   const cleaned = (arr||[]).map(x=>String(x||"").trim()).filter(Boolean);
-  // unique
   const seen = new Set();
   const uniq = cleaned.filter(x=> (seen.has(x)?false:(seen.add(x),true)));
   if(roomEl) roomEl.value = uniq.join(",");
   paintChips_();
+  if(!autoPickingRooms){
+    syncRoomAvailabilityUi_();
+    syncAmountUi_();
+  }
+}
+
+
+function maybeAutoPickRooms_(){
+  const type = String(typeEl?.value || "room");
+  if(type !== "room") return;
+
+  const start_date = String(startEl?.value || "").trim();
+  const end_date = String(endEl?.value || "").trim();
+  const requestedRooms = num0_(roomsCountEl?.value || 0);
+
+  if(!start_date || !end_date || !requestedRooms) return;
+
+  const dbCheck = store.get();
+  ensureBookings_(dbCheck);
+
+  const ignoreId = (isEdit ? b.id : null);
+  const availableExactRooms = getAvailableExactRooms_(dbCheck, start_date, end_date, ignoreId);
+  const currentRooms = getRoomsList_();
+
+  const currentValid =
+    currentRooms.length === requestedRooms &&
+    !hasRoomConflictList_(dbCheck, currentRooms, start_date, end_date, ignoreId);
+
+  if(currentValid) return;
+
+  const best = getBestNearbyRooms_(availableExactRooms, requestedRooms);
+  if(best.length !== requestedRooms) return;
+
+  autoPickingRooms = true;
+  setRoomsList_(best);
+  autoPickingRooms = false;
+
   syncRoomAvailabilityUi_();
   syncAmountUi_();
 }
+
+
+  
 function paintChips_(){
   if(!chipsEl) return;
   const rooms = getRoomsList_();
@@ -967,18 +1116,22 @@ function paintChips_(){
 }
 
 function addRoom_(rn){
-  rn = String(rn||"").replace(/\D/g,""); // digits only
+  rn = String(rn||"").replace(/\D/g,"");
   if(!rn) return;
   const rooms = getRoomsList_();
   if(!rooms.includes(rn)) rooms.push(rn);
   setRoomsList_(rooms);
   if(roomOneEl) roomOneEl.value = "";
+  syncRoomAvailabilityUi_();
+  syncAmountUi_();
 }
 
 function removeRoom_(rn){
   rn = String(rn||"").trim();
   const rooms = getRoomsList_().filter(x=>x !== rn);
   setRoomsList_(rooms);
+  syncRoomAvailabilityUi_();
+  syncAmountUi_();
 }
 
 if(roomOneEl){
@@ -1035,6 +1188,7 @@ if(phoneEl){
  if(roomsCountEl){
   roomsCountEl.addEventListener("input", ()=>{
     roomsCountEl.value = String(roomsCountEl.value || "").replace(/\D/g,"").slice(0,3);
+    maybeAutoPickRooms_();
     syncAmountUi_();
     syncRoomAvailabilityUi_();
   });
@@ -1053,9 +1207,11 @@ function clampRange_(){
   if(d && e && e < d){
     endEl.value = d;
   }
+  maybeAutoPickRooms_();
   syncRoomAvailabilityUi_();
   syncAmountUi_();
 }
+  
 if(startEl) startEl.addEventListener("change", clampRange_);
 if(endEl) endEl.addEventListener("change", clampRange_);
 
