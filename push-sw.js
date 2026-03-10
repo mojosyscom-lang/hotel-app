@@ -9,7 +9,13 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      data: { url }
+      data: { url },
+      icon: "./assets/icons/icon-192.png",
+      badge: "./assets/icons/icon-192.png",
+      tag: "hotelcrm-test",
+      renotify: true,
+      requireInteraction: true,
+      silent: false
     })
   );
 });
