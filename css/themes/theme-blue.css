@@ -3,7 +3,7 @@
   --accent2: #06b6d4;
 
 --header-statusbar: #2d8df0;
---meta-theme: var(--header-statusbar);
+--meta-theme: #2d8df0;
 
 --header-overlay-1: #2d8df0;
 --header-overlay-2: #2d8df0;
@@ -53,6 +53,7 @@ body::before{
   background-color: var(--header-statusbar);
   filter: none;
 }
+
 
 
 
