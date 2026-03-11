@@ -85,10 +85,10 @@ body::before{
   top: 0;
   left: 0;
   right: 0;
-  height: calc(env(safe-area-inset-top) + 2px);
+  height: env(safe-area-inset-top);
   z-index: 49;
   pointer-events: none;
-  background: var(--header-bg);
+  background: var(--header-statusbar);
   background-color: var(--header-statusbar);
 }
 /* ---------------- Header / Topbar ---------------- */
@@ -902,6 +902,7 @@ body.manageOpen .fab{
 .fab{
   transition: right .18s ease; /* smooth return */
 }
+
 
 
 
