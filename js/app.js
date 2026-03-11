@@ -312,9 +312,9 @@ function updateMetaThemeColor_(){
 
   const css = getComputedStyle(document.documentElement);
   const v =
-    css.getPropertyValue("--header-statusbar").trim() ||
     css.getPropertyValue("--meta-theme").trim() ||
-    "#0b3a2a";
+    css.getPropertyValue("--header-statusbar").trim() ||
+    "#2d8df0";
 
   meta.setAttribute("content", v);
 }
@@ -984,9 +984,10 @@ function renderAppearanceSettings_(){
     s2.theme = document.getElementById("set_theme").value;
        saveSettings_(s2);
 
-    (async ()=>{
+       (async ()=>{
       await applyTheme_();
       await applyBranding(); // refresh header overlay immediately
+      updateMetaThemeColor_();
       alert("Saved.");
     })();
   });
@@ -1652,6 +1653,7 @@ try{
   // Then apply branding (logo/background)
   try{
     await applyBranding();
+    updateMetaThemeColor_();
   }catch(e){
     console.warn("Branding failed", e);
   }
@@ -1738,6 +1740,7 @@ if (document.readyState === "loading") {
   init_();
 
 }
+
 
 
 
