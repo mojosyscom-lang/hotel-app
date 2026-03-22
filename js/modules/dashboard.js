@@ -372,7 +372,7 @@ export function renderDashboard(root){
         </button>
 
         <button class="card" id="dash_pre_room_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Nights Booked (${monthPrefix})</div>
+          <div class="small">Realized Nights (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">${preBookedNights}</div>
           <div class="small" style="margin-top:6px;" hidden>Tap to view</div>
         </button>
@@ -384,7 +384,7 @@ export function renderDashboard(root){
         </button>
 
         <button class="card" id="dash_room_amount_btn" type="button" style="margin:0; flex:1 1 100px; min-width:100px; padding:10px; text-align:left; cursor:pointer;">
-          <div class="small">Room Amount (${monthPrefix})</div>
+          <div class="small">Realized Revenue (${monthPrefix})</div>
           <div style="font-size:22px; font-weight:900; margin-top:4px; color: var(--cal-room);">₹${roomRevenueMonth}</div>
           <div class="small" style="font-size:8px; margin-top:6px;" hidden>${monthPrefix}</div>
         </button>
