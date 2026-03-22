@@ -195,8 +195,8 @@ async function openBookingPdf_({ mode, monthKey, search, filtered, totalsRowHtml
     { key:"noOfRooms",   label:"NO OF ROOMS", width:16 },
     { key:"countVal",    label:countLabel, width:16 },
     { key:"tariff",      label:"TARIFF", width:16 },
-    { key:"amount",      label:"AMOUNT", width:18 },
-    { key:"remark",      label:"REMARK", width:31 }
+    { key:"amount",      label:"TOTAL CONTRACT VALUE", width:26 },
+    { key:"remark",      label:"REMARK", width:23 }
   ];
 
   const usableTableWidth = pageW - marginLeft - marginRight;
@@ -468,7 +468,7 @@ export function renderBookingTablePage(root, opts){
   });
 
     const baseMonthTitle = monthTitleFromKey_(monthKey || monthKeyFromIso_(new Date().toISOString().slice(0,10))).replace(" BOOKING", "");
-  const title = `${baseMonthTitle} ${mode === "event" ? "EVENT" : "ROOM"} BOOKING`;
+  const title = `${baseMonthTitle} ${mode === "event" ? "EVENT" : "ROOM"} BOOKINGS (BY ARRIVAL DATE)`;
 
     const totalRooms = filtered.reduce((sum, b)=> sum + roomsCount_(b), 0);
   const totalRoomNights = filtered.reduce((sum, b)=> sum + roomNightUnits_(b), 0);
@@ -560,7 +560,7 @@ export function renderBookingTablePage(root, opts){
               <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">NO OF ROOMS</th>
               <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">${mode === "event" ? "NO.DAY" : "NO.NIGHT"}</th>
               <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">TARIFF</th>
-              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">AMOUNT</th>
+              <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">TOTAL CONTRACT VALUE</th>
               <th style="padding:8px; border:1px solid #777; background:#ffef00; color:#111827; text-align:center;">REMARK</th>
             </tr>
           </thead>
