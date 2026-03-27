@@ -4,9 +4,10 @@ export function rebuildStatsIndex(db){
   const bookingsArr = Array.isArray(db.bookings) ? db.bookings : [];
 
   function monthKeyFromIso_(iso){
-    return String(iso || "").slice(0,7);
+    return String(iso || "").slice(0, 7);
   }
 
+  // 1. Exact match from table.js
   function roomsCount_(b){
     const direct = Number(b && b.rooms_count);
     if(isFinite(direct) && direct > 0) return direct;
@@ -18,6 +19,7 @@ export function rebuildStatsIndex(db){
       .length;
   }
 
+  // 2. Exact match from table.js
   function roomNights_(b){
     const direct = Number(b && b.nights_count);
     if(isFinite(direct) && direct > 0) return direct;
@@ -26,159 +28,81 @@ export function rebuildStatsIndex(db){
     const e = String(b && b.end_date || "");
     if(!s || !e) return 0;
 
-    const start = new Date(s+"T00:00:00");
-    const end = new Date(e+"T00:00:00");
+    const start = new Date(s + "T00:00:00");
+    const end = new Date(e + "T00:00:00");
     if(!isFinite(start) || !isFinite(end)) return 0;
 
-const nights = Math.floor((end-start)/86400000);
-const safeNights = nights > 0 ? nights : 1;
-
-// 🔥 FIX: multiply by rooms
-return safeNights * roomsCount_(b);
+    const nights = Math.floor((end - start) / 86400000);
+    return nights > 0 ? nights : 1;
   }
 
+  // 3. Exact match from table.js
+  function roomNightUnits_(b){
+    return roomsCount_(b) * roomNights_(b);
+  }
+
+  // 4. Exact match from table.js
+  function eventDays_(b){
+    const direct = Number(b && b.days_count);
+    if(isFinite(direct) && direct > 0) return direct;
+
+    const s = String(b && b.start_date || "");
+    const e = String(b && b.end_date || "");
+    if(!s || !e) return 0;
+
+    const start = new Date(s + "T00:00:00");
+    const end = new Date(e + "T00:00:00");
+    if(!isFinite(start) || !isFinite(end)) return 0;
+
+    const days = Math.floor((end - start) / 86400000) + 1;
+    return days > 0 ? days : 0;
+  }
+
+  // 5. Exact match from table.js
   function totalAmount_(b){
     const direct = Number(b && b.total_amount);
     if(isFinite(direct) && direct >= 0) return direct;
 
+    const type = String(b && b.type || "room");
     const rate = Number(b && b.rate) || 0;
-return rate * roomNights_(b);
+
+    if(type === "event"){
+      return rate * eventDays_(b);
+    }
+    return rate * roomNights_(b) * roomsCount_(b);
   }
 
-  function eventAmount_(b){
-    const direct = Number(b && b.total_amount);
-    if(isFinite(direct) && direct >= 0) return direct;
-
-    const rate = Number(b && b.rate) || 0;
-    const days = Number(b && b.days_count) || 0;
-    return rate * days;
-  }
-
+  // Processing Loop
   bookingsArr.forEach(b=>{
-
     const s = String(b && b.start_date || "");
-    const e = String(b && b.end_date || "");
-    if(!s || !e) return;
-
-    const start = new Date(s+"T00:00:00");
-    const end = new Date(e+"T00:00:00");
-    if(!isFinite(start) || !isFinite(end)) return;
+    
+    // We only require a start date to group it into a month (matching table.js behavior)
+    if(!s) return; 
 
     const isEvent = String(b && b.type || "") === "event";
-
     const monthKey = monthKeyFromIso_(s);
 
-if(!stats[monthKey]){
-  stats[monthKey] = {
-    roomBookings:0,
-    roomNights:0,
-    roomRevenue:0,
-    eventBookings:0,
-    eventDays:0,
-    eventRevenue:0
-  };
-}
-
-    if(isEvent){
-
-  stats[monthKey].eventBookings += 1;
-
-  const days = Number(b && b.days_count) || 0;
-  const safeDays = days > 0 ? days : 1;
-
-  stats[monthKey].eventDays += safeDays;
-  stats[monthKey].eventRevenue += eventAmount_(b);
-
-}else{
-
-  stats[monthKey].roomBookings += roomsCount_(b);
-  stats[monthKey].roomNights += roomNights_(b);
-  stats[monthKey].roomRevenue += totalAmount_(b);
-
-}
-
-    
-/*
-    let cur = new Date(start);
-
-    while(cur <= end){
-
-      const monthKey = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,"0")}`;
-
-      if(!stats[monthKey]){
-        stats[monthKey] = {
-          roomBookings:0,
-          roomNights:0,
-          roomRevenue:0,
-          eventBookings:0,
-          eventDays:0,
-          eventRevenue:0
-        };
-      }
-
-      const monthStart = new Date(monthKey+"-01T00:00:00");
-      const monthEnd = new Date(monthStart);
-      monthEnd.setMonth(monthEnd.getMonth()+1);
-      monthEnd.setDate(0);
-
-      const monthStartIso = monthKey+"-01";
-      const monthEndIso = monthKey+"-"+String(monthEnd.getDate()).padStart(2,"0");
-
-      const overlapStart = s > monthStartIso ? s : monthStartIso;
-      const overlapEnd = e < monthEndIso ? e : monthEndIso;
-
-      if(overlapStart <= overlapEnd){
-
-        if(isEvent){
-
-          stats[monthKey].eventBookings += 1;
-
-          const ovStart = new Date(overlapStart+"T00:00:00");
-          const ovEnd = new Date(overlapEnd+"T00:00:00");
-
-          const overlapDays = Math.floor((ovEnd-ovStart)/86400000)+1;
-          const totalDays = Math.floor((end-start)/86400000)+1;
-
-          stats[monthKey].eventDays += overlapDays;
-
-          if(totalDays>0){
-            stats[monthKey].eventRevenue += Math.round((eventAmount_(b)*overlapDays)/totalDays);
-          }
-
-        }else{
-
-       const bookingMonthKey = monthKeyFromIso_(s);
-
-if (bookingMonthKey === monthKey) {
-  stats[monthKey].roomBookings += roomsCount_(b);
-}
-
-          const ovStart = new Date(overlapStart+"T00:00:00");
-          const ovEnd = new Date(overlapEnd+"T00:00:00");
-
-          const overlapNights = Math.floor((ovEnd-ovStart)/86400000);
-          const totalNights = Math.floor((end-start)/86400000);
-
-          const safeOverlap = overlapNights>0 ? overlapNights : 1;
-          const safeTotal = totalNights>0 ? totalNights : 1;
-
-if (bookingMonthKey === monthKey) {
-  stats[monthKey].roomNights += roomNights_(b);
-}
-
-         if (bookingMonthKey === monthKey) {
-  stats[monthKey].roomRevenue += totalAmount_(b);
-}
-        }
-
-      }
-
-      cur.setMonth(cur.getMonth()+1);
-      cur.setDate(1);
+    if(!stats[monthKey]){
+      stats[monthKey] = {
+        roomBookings: 0,
+        roomNights: 0,
+        roomRevenue: 0,
+        eventBookings: 0,
+        eventDays: 0,
+        eventRevenue: 0
+      };
     }
 
-    */
-
+    if(isEvent){
+      stats[monthKey].eventBookings += 1;
+      stats[monthKey].eventDays += eventDays_(b);
+      stats[monthKey].eventRevenue += totalAmount_(b);
+    } else {
+      stats[monthKey].roomBookings += roomsCount_(b);
+      // 🔥 Now we use roomNightUnits_ to perfectly mirror the NO.NIGHT column in table.js
+      stats[monthKey].roomNights += roomNightUnits_(b);
+      stats[monthKey].roomRevenue += totalAmount_(b);
+    }
   });
 
   db.stats = stats;
