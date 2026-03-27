@@ -194,7 +194,9 @@ export function renderDashboard(root){
     return isEvent(b) && inRange(todayIso, s, e);
   }).length;
 
-  // Pre-booked = today + future
+
+  const preBookedNights = stats ? stats.roomNights : 0;
+/*  // Pre-booked = today + future
 const preBookedNights = stats ? stats.roomNights : 0;
     if(!isRoom(b)) return sum;
 
@@ -215,6 +217,8 @@ const preBookedNights = stats ? stats.roomNights : 0;
 
    return sum + roomNights_(b);
   }, 0);
+
+*/
 
   const preBookedEvents = stats ? stats.eventDays : bookingsArr.reduce((sum,b)=>{
     if(!isEvent(b)) return sum;
