@@ -160,7 +160,22 @@ export function renderDashboard(root){
 
 
   // Helpers inline (no new exported functions)
-  const inRange = (day, s, e)=> (day && s && e && day >= s && day <= e);
+  const inRange = (day, s, e)=>{
+  if(!day || !s || !e) return false;
+
+  const now = new Date();
+
+  const checkInHour = Number(db.company?.check_in_hour) || 12;
+  const checkOutHour = Number(db.company?.check_out_hour) || 11;
+
+  const start = new Date(s + "T00:00:00");
+  start.setHours(checkInHour, 0, 0);
+
+  const end = new Date(e + "T00:00:00");
+  end.setHours(checkOutHour, 0, 0);
+
+  return now >= start && now < end;
+};
   const isRoom = (b)=> String(b && b.type || "room") !== "event";
   const isEvent = (b)=> String(b && b.type || "") === "event";
   const rateNum = (b)=> Number(b && b.rate) || 0;
@@ -198,7 +213,7 @@ export function renderDashboard(root){
     const overlapNights = Math.floor((end - start) / 86400000);
     const safeNights = overlapNights > 0 ? overlapNights : 1;
 
-    return sum + (safeNights * roomsCount_(b));
+   return sum + roomNights_(b);
   }, 0);
 
   const preBookedEvents = stats ? stats.eventDays : bookingsArr.reduce((sum,b)=>{
@@ -300,7 +315,7 @@ export function renderDashboard(root){
     const overlapNights = Math.floor((end - start) / 86400000);
     const safeNights = overlapNights > 0 ? overlapNights : 1;
 
-    return sum + (safeNights * roomsCount_(b));
+ return sum + roomNights_(b);
   }, 0);
 
   const totalAvailableRoomNights = totalRooms * daysInMonth;
