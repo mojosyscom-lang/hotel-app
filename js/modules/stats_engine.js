@@ -66,6 +66,39 @@ return rate * roomNights_(b);
 
     const isEvent = String(b && b.type || "") === "event";
 
+    const monthKey = monthKeyFromIso_(s);
+
+if(!stats[monthKey]){
+  stats[monthKey] = {
+    roomBookings:0,
+    roomNights:0,
+    roomRevenue:0,
+    eventBookings:0,
+    eventDays:0,
+    eventRevenue:0
+  };
+}
+
+    if(isEvent){
+
+  stats[monthKey].eventBookings += 1;
+
+  const days = Number(b && b.days_count) || 0;
+  const safeDays = days > 0 ? days : 1;
+
+  stats[monthKey].eventDays += safeDays;
+  stats[monthKey].eventRevenue += eventAmount_(b);
+
+}else{
+
+  stats[monthKey].roomBookings += roomsCount_(b);
+  stats[monthKey].roomNights += roomNights_(b);
+  stats[monthKey].roomRevenue += totalAmount_(b);
+
+}
+
+    
+/*
     let cur = new Date(start);
 
     while(cur <= end){
@@ -143,6 +176,8 @@ if (bookingMonthKey === monthKey) {
       cur.setMonth(cur.getMonth()+1);
       cur.setDate(1);
     }
+
+    */
 
   });
 
