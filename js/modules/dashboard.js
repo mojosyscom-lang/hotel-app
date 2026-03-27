@@ -195,7 +195,7 @@ export function renderDashboard(root){
   }).length;
 
   // Pre-booked = today + future
-     const preBookedNights = stats ? stats.roomNights : bookingsArr.reduce((sum,b)=>{
+const preBookedNights = stats ? stats.roomNights : 0;
     if(!isRoom(b)) return sum;
 
     const s = String(b && b.start_date || "");
@@ -297,6 +297,8 @@ export function renderDashboard(root){
 
   */
 
+const bookedRoomNightsMonth = stats ? stats.roomNights : 0;
+/*
   const bookedRoomNightsMonth = bookingsArr.reduce((sum,b)=>{
     if(!isRoom(b)) return sum;
 
@@ -317,6 +319,8 @@ export function renderDashboard(root){
 
  return sum + roomNights_(b);
   }, 0);
+
+*/
 
   const totalAvailableRoomNights = totalRooms * daysInMonth;
   const occupancyPct = totalAvailableRoomNights > 0
