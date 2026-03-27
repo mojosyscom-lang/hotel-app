@@ -30,8 +30,11 @@ export function rebuildStatsIndex(db){
     const end = new Date(e+"T00:00:00");
     if(!isFinite(start) || !isFinite(end)) return 0;
 
-    const nights = Math.floor((end-start)/86400000);
-    return nights>0 ? nights : 1;
+const nights = Math.floor((end-start)/86400000);
+const safeNights = nights > 0 ? nights : 1;
+
+// 🔥 FIX: multiply by rooms
+return safeNights * roomsCount_(b);
   }
 
   function totalAmount_(b){
@@ -39,7 +42,7 @@ export function rebuildStatsIndex(db){
     if(isFinite(direct) && direct >= 0) return direct;
 
     const rate = Number(b && b.rate) || 0;
-    return rate * roomNights_(b) * roomsCount_(b);
+return rate * roomNights_(b);
   }
 
   function eventAmount_(b){
@@ -111,7 +114,11 @@ export function rebuildStatsIndex(db){
 
         }else{
 
-          stats[monthKey].roomBookings += roomsCount_(b);
+       const bookingMonthKey = monthKeyFromIso_(s);
+
+if (bookingMonthKey === monthKey) {
+  stats[monthKey].roomBookings += roomsCount_(b);
+}
 
           const ovStart = new Date(overlapStart+"T00:00:00");
           const ovEnd = new Date(overlapEnd+"T00:00:00");
@@ -122,9 +129,13 @@ export function rebuildStatsIndex(db){
           const safeOverlap = overlapNights>0 ? overlapNights : 1;
           const safeTotal = totalNights>0 ? totalNights : 1;
 
-          stats[monthKey].roomNights += safeOverlap * roomsCount_(b);
+if (bookingMonthKey === monthKey) {
+  stats[monthKey].roomNights += roomNights_(b);
+}
 
-          stats[monthKey].roomRevenue += Math.round((totalAmount_(b)*safeOverlap)/safeTotal);
+         if (bookingMonthKey === monthKey) {
+  stats[monthKey].roomRevenue += totalAmount_(b);
+}
         }
 
       }
